@@ -1,4 +1,6 @@
-//personal note -> interface describes an object
+//personal note -> 
+//this file descrobes what does Aviationstack give us
+//interface describes an object
 // AviationstackFlightData(code easier to understand and resuse hence multiple interfaces instead of one)
 // │
 // ├── departure → AviationstackAirport

@@ -1,3 +1,5 @@
+//Talks to AviationStack ("Get me the raw flight data.")
+
 import type {
   AviationstackFlightData,
   AviationstackFlightsResponse,
