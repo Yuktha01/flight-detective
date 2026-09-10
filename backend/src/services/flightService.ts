@@ -19,12 +19,14 @@
 // FlightResponse
 
 import { getFlight } from "./aviationstackService";
+//typescript-only imports - primarily for ts checking ; not needed when program is actually running.
 import type { AviationstackFlightData } from "../types/aviationstack";
 import type { FlightResponse } from "../types/flight";
 
 //If Aviationstack gives us a delay, use it. If it gives us null, use 0
-function calculateDelayMinutes(delay: number | null): number {
+function calculateDelayMinutes(delay: number | null): number {  //Input : number OR null (OR is called union type); Output : number
   return delay ?? 0;            //nullish coalescing operator
+  //if delay has a value - use delay ; if delay is null - use 0
 }
 
 function transformFlight(flight: AviationstackFlightData): FlightResponse {

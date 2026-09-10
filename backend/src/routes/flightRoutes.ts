@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { getFlight } from "../services/aviationstackService";
+// import { getFlight } from "../services/aviationstackService";
+import { investigateFlight } from "../services/flightService";
 
 const router = Router();
 
@@ -7,7 +8,7 @@ router.get("/:flightNumber", async (req, res) => {
   try {
     const flightNumber = req.params.flightNumber.toUpperCase();
 
-    const flight = await getFlight(flightNumber);
+    const flight = await investigateFlight(flightNumber);
 
     if (!flight) {
       res.status(404).json({
