@@ -3,13 +3,20 @@
 
 //DATA TRANSFORMATION OR MAPPING will be done from aviationstack.ts file and this file through service layer(flightService.ts)
 
+export type FlightStatus =    //LITERAL UNION TYPE | "" | ""... 
+  | "scheduled"
+  | "in_flight"
+  | "landed"
+  | "cancelled"
+  | "incident"
+  | "diverted";
 
 export interface FlightResponse {
   flight: {
     number: string;
     iata: string;
     icao: string;
-    status: string;
+    status: FlightStatus;
     date: string;
   };
 

@@ -21,12 +21,36 @@
 import { getFlight } from "./aviationstackService";
 //typescript-only imports - primarily for ts checking ; not needed when program is actually running.
 import type { AviationstackFlightData } from "../types/aviationstack";
-import type { FlightResponse } from "../types/flight";
+import type { FlightResponse, FlightStatus } from "../types/flight";
 
 //If Aviationstack gives us a delay, use it. If it gives us null, use 0
 function calculateDelayMinutes(delay: number | null): number {  //Input : number OR null (OR is called union type); Output : number
   return delay ?? 0;            //nullish coalescing operator
   //if delay has a value - use delay ; if delay is null - use 0
+}
+
+function getFlightStatus(
+  status: AviationstackFlightData["flight_status"]    //status parameter must have same type as the type of flight_status property from AviationstackFlightData
+): FlightStatus {     //return type
+  switch (status) {
+    case "scheduled":
+      return "scheduled";
+
+    case "active":
+      return "in_flight";
+
+    case "landed":
+      return "landed";
+
+    case "cancelled":
+      return "cancelled";
+
+    case "incident":
+      return "incident";
+
+    case "diverted":
+      return "diverted";
+  }
 }
 
 function transformFlight(flight: AviationstackFlightData): FlightResponse {
@@ -43,7 +67,7 @@ function transformFlight(flight: AviationstackFlightData): FlightResponse {
       number: flight.flight.number,
       iata: flight.flight.iata,
       icao: flight.flight.icao,
-      status: flight.flight_status,
+      status: getFlightStatus(flight.flight_status),
       date: flight.flight_date,
     },
 
