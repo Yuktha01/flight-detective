@@ -1,15 +1,15 @@
 //What does Flight Detective give our FE.
 
-
 //DATA TRANSFORMATION OR MAPPING will be done from aviationstack.ts file and this file through service layer(flightService.ts)
 
-export type FlightStatus =    //LITERAL UNION TYPE | "" | ""... 
-  | "scheduled"
-  | "in_flight"
-  | "landed"
-  | "cancelled"
-  | "incident"
-  | "diverted";
+export type FlightStatus = //LITERAL UNION TYPE | "" | ""...
+  "scheduled" | "in_flight" | "landed" | "cancelled" | "incident" | "diverted";
+
+export type DelayStatus =
+  | "on_time"
+  | "minor_delay"
+  | "delayed"
+  | "significant_delay";
 
 export interface FlightResponse {
   flight: {
@@ -77,7 +77,7 @@ export interface FlightResponse {
 
   insight: {
     delayMinutes: number;
-    personality: string;
+    delayStatus : DelayStatus;
     summary: string;
   };
 }

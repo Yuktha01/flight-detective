@@ -21,17 +21,36 @@
 import { getFlight } from "./aviationstackService";
 //typescript-only imports - primarily for ts checking ; not needed when program is actually running.
 import type { AviationstackFlightData } from "../types/aviationstack";
-import type { FlightResponse, FlightStatus } from "../types/flight";
+import type {
+  FlightResponse,
+  FlightStatus,
+  DelayStatus,
+} from "../types/flight";
 
 //If Aviationstack gives us a delay, use it. If it gives us null, use 0
-function calculateDelayMinutes(delay: number | null): number {  //Input : number OR null (OR is called union type); Output : number
-  return delay ?? 0;            //nullish coalescing operator
+function calculateDelayMinutes(delay: number | null): number {
+  //Input : number OR null (OR is called union type); Output : number
+  return delay ?? 0; //nullish coalescing operator
   //if delay has a value - use delay ; if delay is null - use 0
 }
 
+export function getDelayStatus(delayMinutes: number): DelayStatus {
+  if (delayMinutes === 0) {
+    return "on_time";
+  }
+  if (delayMinutes < 15) {
+    return "minor_delay";
+  }
+  if (delayMinutes < 60) {
+    return "delayed";
+  }
+  return "significant_delay";
+}
+
 function getFlightStatus(
-  status: AviationstackFlightData["flight_status"]    //status parameter must have same type as the type of flight_status property from AviationstackFlightData
-): FlightStatus {     //return type
+  status: AviationstackFlightData["flight_status"], //status parameter must have same type as the type of flight_status property from AviationstackFlightData
+): FlightStatus {
+  //return type
   switch (status) {
     case "scheduled":
       return "scheduled";
@@ -53,14 +72,32 @@ function getFlightStatus(
   }
 }
 
-function transformFlight(flight: AviationstackFlightData): FlightResponse {
-  const departureDelayMinutes = calculateDelayMinutes(
-    flight.departure.delay
-  );
+export function getDelaySummary(delayStatus: DelayStatus, delayMinutes: number): string {
+  switch (delayStatus) {
+    case "on_time":
+      return "This flight is currently on time.";
 
-  const arrivalDelayMinutes = calculateDelayMinutes(
-    flight.arrival.delay
-  );
+    case "minor_delay":
+      return `This flight has a minor delay of ${delayMinutes} minutes.`;
+
+    case "delayed":
+      return `This flight is delayed by ${delayMinutes} minutes.`;
+
+    case "significant_delay":
+      return `This flight has a significant delay of ${delayMinutes} minutes.`;
+  }
+}
+
+function transformFlight(flight: AviationstackFlightData): FlightResponse {
+  const departureDelayMinutes = calculateDelayMinutes(flight.departure.delay);
+
+  const arrivalDelayMinutes = calculateDelayMinutes(flight.arrival.delay);
+
+  const delayStatus = getDelayStatus(departureDelayMinutes);
+  const delaySummary = getDelaySummary(
+    delayStatus,
+    departureDelayMinutes
+  )
 
   return {
     flight: {
@@ -131,15 +168,15 @@ function transformFlight(flight: AviationstackFlightData): FlightResponse {
       : null,
 
     insight: {
-      delayMinutes: departureDelayMinutes,      //placeholders 
-      personality: "The Detective",
-      summary: "Flight information is available.",
+      delayMinutes: departureDelayMinutes, 
+      delayStatus,
+      summary : delaySummary
     },
   };
 }
 
 export async function investigateFlight(
-  flightNumber: string
+  flightNumber: string,
 ): Promise<FlightResponse | null> {
   const flight = await getFlight(flightNumber);
 
