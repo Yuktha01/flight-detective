@@ -8,6 +8,18 @@ router.get("/:flightNumber", async (req, res) => {
   try {
     const flightNumber = req.params.flightNumber.toUpperCase();
 
+    const flightNumberPattern = /^[A-Z]{2}\d{1,4}$/;
+
+    if (!flightNumberPattern.test(flightNumber)) {
+      res.status(400).json({
+        error: {
+          code: "INVALID_FLIGHT_NUMBER",
+          message: "Please enter a valid flight number.",
+        },
+      });
+      return;
+    }
+
     const flight = await investigateFlight(flightNumber);
 
     if (!flight) {
