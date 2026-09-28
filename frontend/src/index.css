@@ -11,8 +11,8 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --heading: system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -108,4 +108,55 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+:root {
+  --paper: #f7f9f5;
+  --ink: #1b2b24;
+  --muted: #68776e;
+  --line: #dce4dc;
+  --forest: #12332e;
+  --signal: #c7ed72;
+  --leaf: #75a945;
+  --danger: #b54f3b;
+  --display: Georgia, "Times New Roman", serif;
+  --sans: "Aptos", "Trebuchet MS", sans-serif;
+  --mono: "Cascadia Mono", Consolas, monospace;
+
+  color: var(--ink);
+  background: #e9eee8;
+  color-scheme: light;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-synthesis: none;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+button,
+input {
+  font: inherit;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #7ba753;
+  outline-offset: 3px;
+}
+::selection {
+  color: var(--ink);
+  background: #d7efaa;
+}
+#root {
+  min-height: 100vh;
 }
