@@ -1,5 +1,9 @@
-import { describe, expect, it ,vi} from "vitest";
-import { getDelayStatus ,getDelaySummary , investigateFlight} from "./flightService";
+import { describe, expect, it, vi } from "vitest";
+import {
+  getDelayStatus,
+  getDelaySummary,
+  investigateFlight,
+} from "./flightService";
 import { getFlight } from "./aviationstackService";
 
 // describe → group tests
@@ -106,54 +110,67 @@ describe("getDelayStatus", () => {
   });
 
   it("returns the correct summary for an on-time flight", () => {
-  expect(getDelaySummary("on_time", 0)).toBe(
-    "This flight is currently on time."
-  );
+    expect(getDelaySummary("on_time", 0)).toBe(
+      "This flight is currently on time.",
+    );
+  });
+
+  it("returns the correct summary for a minor delay", () => {
+    expect(getDelaySummary("minor_delay", 8)).toBe(
+      "This flight has a minor delay of 8 minutes.",
+    );
+  });
+
+  it("returns the correct summary for a delayed flight", () => {
+    expect(getDelaySummary("delayed", 25)).toBe(
+      "This flight is delayed by 25 minutes.",
+    );
+  });
+
+  it("returns the correct summary for a significant delay", () => {
+    expect(getDelaySummary("significant_delay", 90)).toBe(
+      "This flight has a significant delay of 90 minutes.",
+    );
+  });
+
+  it("transforms a flight returned by Aviationstack", async () => {
+    vi.mocked(getFlight).mockResolvedValue(mockFlight); //When investigateFlight() calls getFlight(), pretend the external API returned mockFlight.
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.flight.iata).toBe("SU1531");
+    expect(result?.flight.status).toBe("scheduled");
+    expect(result?.airline.name).toBe("Aeroflot");
+    expect(result?.departure.delayMinutes).toBe(25);
+    expect(result?.insight.delayStatus).toBe("delayed");
+    expect(result?.insight.summary).toBe(
+      "This flight is delayed by 25 minutes.",
+    );
+  });
+
+  it("maps the compact airline fields returned by Aviationstack", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      airline: { name: "Flexflight", iata: "W2", icao: "FXT" },
+    });
+
+    const result = await investigateFlight("W24979");
+
+    expect(result?.airline).toEqual({
+      name: "Flexflight",
+      iata: "W2",
+      icao: "FXT",
+    });
+  });
+
+  it("returns null when the flight is not found", async () => {
+    vi.mocked(getFlight).mockResolvedValue(null);
+
+    const result = await investigateFlight("INVALID");
+
+    expect(result).toBeNull();
+  });
 });
-
-it("returns the correct summary for a minor delay", () => {
-  expect(getDelaySummary("minor_delay", 8)).toBe(
-    "This flight has a minor delay of 8 minutes."
-  );
-});
-
-it("returns the correct summary for a delayed flight", () => {
-  expect(getDelaySummary("delayed", 25)).toBe(
-    "This flight is delayed by 25 minutes."
-  );
-});
-
-it("returns the correct summary for a significant delay", () => {
-  expect(getDelaySummary("significant_delay", 90)).toBe(
-    "This flight has a significant delay of 90 minutes."
-  );
-});
-
-it("transforms a flight returned by Aviationstack", async () => {
-  vi.mocked(getFlight).mockResolvedValue(mockFlight); //When investigateFlight() calls getFlight(), pretend the external API returned mockFlight.
-
-  const result = await investigateFlight("SU1531");
-
-  expect(result?.flight.iata).toBe("SU1531");
-  expect(result?.flight.status).toBe("scheduled");
-  expect(result?.airline.name).toBe("Aeroflot");
-  expect(result?.departure.delayMinutes).toBe(25);
-  expect(result?.insight.delayStatus).toBe("delayed");
-  expect(result?.insight.summary).toBe(
-    "This flight is delayed by 25 minutes."
-  );
-});
-
-it("returns null when the flight is not found", async () => {
-  vi.mocked(getFlight).mockResolvedValue(null);
-
-  const result = await investigateFlight("INVALID");
-
-  expect(result).toBeNull();
-});
-
-});
-
 
 //Unit tests
 // ├── getDelayStatus()

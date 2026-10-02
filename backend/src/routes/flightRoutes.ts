@@ -8,7 +8,7 @@ router.get("/:flightNumber", async (req, res) => {
   try {
     const flightNumber = req.params.flightNumber.toUpperCase();
 
-    const flightNumberPattern = /^[A-Z]{2}\d{1,4}$/;
+    const flightNumberPattern = /^[A-Z][A-Z0-9]{1,2}\d{1,4}$/;
 
     if (!flightNumberPattern.test(flightNumber)) {
       res.status(400).json({

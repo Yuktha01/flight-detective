@@ -72,7 +72,10 @@ function getFlightStatus(
   }
 }
 
-export function getDelaySummary(delayStatus: DelayStatus, delayMinutes: number): string {
+export function getDelaySummary(
+  delayStatus: DelayStatus,
+  delayMinutes: number,
+): string {
   switch (delayStatus) {
     case "on_time":
       return "This flight is currently on time.";
@@ -93,11 +96,14 @@ function transformFlight(flight: AviationstackFlightData): FlightResponse {
 
   const arrivalDelayMinutes = calculateDelayMinutes(flight.arrival.delay);
 
+  const airline = flight.airline;
+  const airlineName =
+    "airline_name" in airline ? airline.airline_name : airline.name;
+  const airlineIata = "iata_code" in airline ? airline.iata_code : airline.iata;
+  const airlineIcao = "icao_code" in airline ? airline.icao_code : airline.icao;
+
   const delayStatus = getDelayStatus(departureDelayMinutes);
-  const delaySummary = getDelaySummary(
-    delayStatus,
-    departureDelayMinutes
-  )
+  const delaySummary = getDelaySummary(delayStatus, departureDelayMinutes);
 
   return {
     flight: {
@@ -109,9 +115,9 @@ function transformFlight(flight: AviationstackFlightData): FlightResponse {
     },
 
     airline: {
-      name: flight.airline.airline_name,
-      iata: flight.airline.iata_code,
-      icao: flight.airline.icao_code,
+      name: airlineName,
+      iata: airlineIata,
+      icao: airlineIcao,
     },
 
     route: {
@@ -168,9 +174,9 @@ function transformFlight(flight: AviationstackFlightData): FlightResponse {
       : null,
 
     insight: {
-      delayMinutes: departureDelayMinutes, 
+      delayMinutes: departureDelayMinutes,
       delayStatus,
-      summary : delaySummary
+      summary: delaySummary,
     },
   };
 }

@@ -1,4 +1,4 @@
-//personal note -> 
+//personal note ->
 //this file descrobes what does Aviationstack give us
 //interface describes an object
 // AviationstackFlightData(code easier to understand and resuse hence multiple interfaces instead of one)
@@ -47,6 +47,12 @@ export interface AviationstackAirline {
   type: string | null;
 }
 
+export interface AviationstackAirlineSummary {
+  name: string;
+  iata: string;
+  icao: string;
+}
+
 export interface AviationstackFlight {
   number: string;
   iata: string;
@@ -81,7 +87,7 @@ export interface AviationstackFlightData {
   flight_status: AviationstackFlightStatus;
   departure: AviationstackAirport;
   arrival: AviationstackAirport;
-  airline: AviationstackAirline;
+  airline: AviationstackAirline | AviationstackAirlineSummary;
   flight: AviationstackFlight;
   aircraft: AviationstackAircraft | null; //aircraft object or null
   live: AviationstackLive | null;

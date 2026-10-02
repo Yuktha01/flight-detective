@@ -98,6 +98,29 @@ describe('Flight Detective app', () => {
     })
   })
 
+  it('accepts an alphanumeric airline code such as W2', async () => {
+    mockedGetFlight.mockResolvedValue(flightResponse)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'w24979')
+    await user.click(screen.getByRole('button', { name: /investigate/i }))
+
+    expect(mockedGetFlight).toHaveBeenCalledWith('W24979')
+    expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
+  })
+
+  it('accepts a three-letter airline code such as GEC', async () => {
+    mockedGetFlight.mockResolvedValue(flightResponse)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'gec8387')
+    await user.click(screen.getByRole('button', { name: /investigate/i }))
+
+    expect(mockedGetFlight).toHaveBeenCalledWith('GEC8387')
+  })
+
   it('renders flight details after a successful response', async () => {
     mockedGetFlight.mockResolvedValue(flightResponse)
     const user = userEvent.setup()

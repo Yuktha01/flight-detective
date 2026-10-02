@@ -13,7 +13,7 @@ type SearchState =
   | { status: 'invalid'; message: string }
   | { status: 'error'; message: string }
 
-const flightNumberPattern = /^[A-Z]{2}\d{1,4}$/
+const flightNumberPattern = /^[A-Z][A-Z0-9]{1,2}\d{1,4}$/
 
 function App() {
   const [flightNumber, setFlightNumber] = useState('')
@@ -25,7 +25,7 @@ function App() {
     if (!flightNumberPattern.test(normalizedFlightNumber)) {
       setSearchState({
         status: 'invalid',
-        message: 'Enter a flight number with 2 letters followed by 1 to 4 digits.',
+        message: 'Enter a flight number with a 2- or 3-character airline code followed by 1 to 4 digits.',
       })
       return
     }
