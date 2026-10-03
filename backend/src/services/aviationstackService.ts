@@ -9,7 +9,8 @@ const AVIATIONSTACK_URL = "https://api.apilayer.net/aviationstack/v1/flights";
 
 export async function getFlight(
   flightIata: string,
-): Promise<AviationstackFlightData | null> {      //This function is asynchronous and will eventually return either an AviationstackFlightData object or null
+): Promise<AviationstackFlightData | null> {
+  //This function is asynchronous and will eventually return either an AviationstackFlightData object or null
   const apiKey = process.env.AVIATIONSTACK_API_KEY;
 
   if (!apiKey) {
@@ -24,6 +25,13 @@ export async function getFlight(
   const response = await fetch(url);
 
   if (!response.ok) {
+    const errorBody = await response.text();
+
+    console.error("Aviationstack error:", {
+      status: response.status,
+      body: errorBody,
+    });
+
     throw new Error(
       `Aviationstack request failed with status ${response.status}`,
     );
