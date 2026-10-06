@@ -68,14 +68,14 @@ export interface AviationstackAircraft {
 }
 
 export interface AviationstackLive {
-  updated: string;
-  latitude: number;
-  longitude: number;
-  altitude: number;
-  direction: number;
-  speed_horizontal: number;
-  speed_vertical: number;
-  is_ground: boolean;
+  updated: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  altitude: number | null;
+  direction: number | null;
+  speed_horizontal: number | null;
+  speed_vertical: number | null;
+  is_ground: boolean | null;
 }
 
 export type AviationstackFlightStatus =
@@ -84,7 +84,7 @@ export type AviationstackFlightStatus =
 
 export interface AviationstackFlightData {
   flight_date: string;
-  flight_status: AviationstackFlightStatus;
+  flight_status?: AviationstackFlightStatus | null;
   departure: AviationstackAirport;
   arrival: AviationstackAirport;
   airline: AviationstackAirline | AviationstackAirlineSummary;

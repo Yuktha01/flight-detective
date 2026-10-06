@@ -14,7 +14,7 @@ const mockedGetFlight = vi.mocked(getFlight)
 
 const flightResponse: FlightResponse = {
   flight: {
-    number: 'SU1531',
+    number: '1531',
     iata: 'SU1531',
     icao: 'AFL1531',
     status: 'in_flight',
@@ -136,6 +136,41 @@ describe('Flight Detective app', () => {
     expect(screen.getByText('This flight is delayed by 15 minutes.')).toBeInTheDocument()
     expect(screen.getByText('RA-12345')).toBeInTheDocument()
     expect(screen.getByText('Ground speed')).toBeInTheDocument()
+  })
+
+  it('renders live flight details when some telemetry values are unavailable', async () => {
+    mockedGetFlight.mockResolvedValue({
+      ...flightResponse,
+      live: {
+        ...flightResponse.live!,
+        latitude: null,
+        altitudeMeters: null,
+      },
+    })
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'su1531')
+    await user.click(screen.getByRole('button', { name: /investigate/i }))
+
+    expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
+    expect(screen.getByText('Not available')).toBeInTheDocument()
+    expect(screen.getByText('Not available, 30.36')).toBeInTheDocument()
+  })
+
+  it('renders the flight when the API cannot provide a status', async () => {
+    mockedGetFlight.mockResolvedValue({
+      ...flightResponse,
+      flight: { ...flightResponse.flight, status: 'unknown' },
+    })
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'su1531')
+    await user.click(screen.getByRole('button', { name: /investigate/i }))
+
+    expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
+    expect(screen.getByText('status unavailable')).toBeInTheDocument()
   })
 
   it('shows the not-found state for a 404 response', async () => {

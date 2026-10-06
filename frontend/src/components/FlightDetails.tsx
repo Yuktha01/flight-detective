@@ -33,7 +33,14 @@ function formatFlightDate(value: string | null | undefined) {
   }).format(date)
 }
 
+function formatLiveNumber(value: number | null | undefined, format: (value: number) => string) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? format(value)
+    : 'Not available'
+}
+
 function readableStatus(status: FlightStatus) {
+  if (status === 'unknown') return 'status unavailable'
   return status.replaceAll('_', ' ')
 }
 
@@ -42,7 +49,7 @@ function FlightSummary({ flight }: FlightDetailsProps) {
     <section className="flight-summary" aria-labelledby="flight-heading">
       <div>
         <p className="section-kicker">FLIGHT BRIEF <span>{formatFlightDate(flight.flight.date)}</span></p>
-        <h2 id="flight-heading">{flight.flight.number}</h2>
+        <h2 id="flight-heading">{flight.flight.iata || flight.flight.number}</h2>
         <p className="airline-name">{flight.airline.name || 'Airline not available'}</p>
         {(flight.flight.iata || flight.flight.icao) && (
           <p className="record-codes">
@@ -169,13 +176,13 @@ function LiveFlightInfo({ flight }: FlightDetailsProps) {
         <span className="live-indicator"><i /> LIVE</span>
       </div>
       <dl className="compact-details live-details">
-        <div><dt>Altitude</dt><dd>{Math.round(live.altitudeMeters).toLocaleString()} m</dd></div>
-        <div><dt>Ground speed</dt><dd>{Math.round(live.speedKmh).toLocaleString()} km/h</dd></div>
-        <div><dt>Vertical speed</dt><dd>{live.speedVertical.toLocaleString()}</dd></div>
-        <div><dt>Heading</dt><dd>{Math.round(live.direction)}&deg;</dd></div>
-        <div><dt>Position</dt><dd>{live.latitude.toFixed(2)}, {live.longitude.toFixed(2)}</dd></div>
+        <div><dt>Altitude</dt><dd>{formatLiveNumber(live.altitudeMeters, (value) => `${Math.round(value).toLocaleString()} m`)}</dd></div>
+        <div><dt>Ground speed</dt><dd>{formatLiveNumber(live.speedKmh, (value) => `${Math.round(value).toLocaleString()} km/h`)}</dd></div>
+        <div><dt>Vertical speed</dt><dd>{formatLiveNumber(live.speedVertical, (value) => value.toLocaleString())}</dd></div>
+        <div><dt>Heading</dt><dd>{formatLiveNumber(live.direction, (value) => `${Math.round(value)}\u00b0`)}</dd></div>
+        <div><dt>Position</dt><dd>{formatLiveNumber(live.latitude, (value) => value.toFixed(2))}, {formatLiveNumber(live.longitude, (value) => value.toFixed(2))}</dd></div>
         <div><dt>Updated</dt><dd>{formatDateTime(live.updated)}</dd></div>
-        <div><dt>Aircraft state</dt><dd>{live.isGround ? 'On the ground' : 'Airborne'}</dd></div>
+        <div><dt>Aircraft state</dt><dd>{typeof live.isGround === 'boolean' ? live.isGround ? 'On the ground' : 'Airborne' : 'Not available'}</dd></div>
       </dl>
     </section>
   )

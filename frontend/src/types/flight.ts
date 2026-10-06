@@ -4,7 +4,8 @@ export type FlightStatus =
   | "landed"
   | "cancelled"
   | "incident"
-  | "diverted";
+  | "diverted"
+  | "unknown";
 
 export type DelayStatus =
   | "on_time"
@@ -59,14 +60,14 @@ export interface FlightResponse {
     icao: string | null;
   } | null;
   live: {
-    updated: string;
-    latitude: number;
-    longitude: number;
-    altitudeMeters: number;
-    direction: number;
-    speedKmh: number;
-    speedVertical: number;
-    isGround: boolean;
+    updated: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    altitudeMeters: number | null;
+    direction: number | null;
+    speedKmh: number | null;
+    speedVertical: number | null;
+    isGround: boolean | null;
   } | null;
   insight: {
     delayMinutes: number;

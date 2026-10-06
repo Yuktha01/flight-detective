@@ -69,6 +69,9 @@ function getFlightStatus(
 
     case "diverted":
       return "diverted";
+
+    default:
+      return "unknown";
   }
 }
 

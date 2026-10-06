@@ -148,6 +148,15 @@ describe("getDelayStatus", () => {
     );
   });
 
+  it("uses an unknown status when Aviationstack omits the flight status", async () => {
+    const { flight_status: _flightStatus, ...flightWithoutStatus } = mockFlight;
+    vi.mocked(getFlight).mockResolvedValue(flightWithoutStatus);
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.flight.status).toBe("unknown");
+  });
+
   it("maps the compact airline fields returned by Aviationstack", async () => {
     vi.mocked(getFlight).mockResolvedValue({
       ...mockFlight,

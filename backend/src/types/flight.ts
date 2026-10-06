@@ -3,7 +3,13 @@
 //DATA TRANSFORMATION OR MAPPING will be done from aviationstack.ts file and this file through service layer(flightService.ts)
 
 export type FlightStatus = //LITERAL UNION TYPE | "" | ""...
-  "scheduled" | "in_flight" | "landed" | "cancelled" | "incident" | "diverted";
+  | "scheduled"
+  | "in_flight"
+  | "landed"
+  | "cancelled"
+  | "incident"
+  | "diverted"
+  | "unknown";
 
 export type DelayStatus =
   | "on_time"
@@ -65,14 +71,14 @@ export interface FlightResponse {
   } | null;
 
   live: {
-    updated: string;
-    latitude: number;
-    longitude: number;
-    altitudeMeters: number;
-    direction: number;
-    speedKmh: number;
-    speedVertical: number;
-    isGround: boolean;
+    updated: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    altitudeMeters: number | null;
+    direction: number | null;
+    speedKmh: number | null;
+    speedVertical: number | null;
+    isGround: boolean | null;
   } | null;
 
   insight: {
