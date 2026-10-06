@@ -14,6 +14,7 @@ env:
   ECR_REPOSITORY: flight-detective-backend
   ECS_CLUSTER: default
   ECS_SERVICE: flight-detective-backend
+  ECS_TASK_DEFINITION: default-flight-detective-backend
   ECS_CONTAINER_NAME: Main
   S3_BUCKET: flight-detective-frontend-v1
   CLOUDFRONT_DISTRIBUTION_ID: E3RAMX2R1O3ZXX
@@ -52,16 +53,8 @@ jobs:
 
       - name: Get current ECS task definition
         run: |
-          CURRENT_TASK_DEFINITION=$(aws ecs describe-services \
-            --cluster "$ECS_CLUSTER" \
-            --services "$ECS_SERVICE" \
-            --query 'services[0].taskDefinition' \
-            --output text)
-
-          echo "Current task definition: $CURRENT_TASK_DEFINITION"
-
           aws ecs describe-task-definition \
-            --task-definition "$CURRENT_TASK_DEFINITION" \
+            --task-definition "$ECS_TASK_DEFINITION" \
             --query taskDefinition \
             --output json > task-definition.json
 
