@@ -169,3 +169,11 @@ export async function getFlight(
   const flights = await fetchAviationstackFlights({ flight_iata: flightIata }, timeoutMs);
   return flights[0] ?? null;
 }
+
+export async function getRecentFlights(
+  limit = 10,
+  timeoutMs = 8000,
+): Promise<AviationstackFlightData[]> {
+  const boundedLimit = Math.max(1, Math.min(limit, 50));
+  return fetchAviationstackFlights({ limit: String(boundedLimit) }, timeoutMs);
+}

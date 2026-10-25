@@ -427,6 +427,16 @@
   cursor: wait;
   opacity: 0.8;
 }
+.search-controls .button-surprise {
+  min-width: 120px;
+  background: transparent;
+  border: 1px solid #c9d2c8;
+  color: var(--ink);
+}
+.search-controls .button-surprise:hover:not(:disabled) {
+  background: #f0f4ef;
+  border-color: #9cb09f;
+}
 .button-spinner,
 .loading-indicator {
   width: 15px;

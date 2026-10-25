@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  discoverFlights,
   getDelayStatus,
   getDelaySummary,
   investigateFlight,
 } from "./flightService";
-import { getFlight } from "./aviationstackService";
+import { getFlight, getRecentFlights } from "./aviationstackService";
 
 // describe → group tests
 //     ↓
@@ -17,6 +18,7 @@ import { getFlight } from "./aviationstackService";
 
 vi.mock("./aviationstackService", () => ({
   getFlight: vi.fn(),
+  getRecentFlights: vi.fn(),
 }));
 
 const mockFlight = {
@@ -421,14 +423,109 @@ describe("investigateFlight", () => {
   });
 });
 
-//Unit tests
-// ├── getDelayStatus()
-// └── getDelaySummary()
+describe("discoverFlights", () => {
+  it("filters out records with missing or invalid flight numbers", async () => {
+    vi.mocked(getRecentFlights).mockResolvedValue([
+      {
+        flight_date: "2026-09-13",
+        flight_status: "scheduled",
+        flight: { iata: null as any, icao: null as any, number: null as any, codeshared: null },
+        airline: { name: "Ghost Air", iata: "GA", icao: "GHA" },
+        departure: { airport: "A", timezone: "UTC", iata: "AAA", icao: "AAAA", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T10:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        arrival: { airport: "B", timezone: "UTC", iata: "BBB", icao: "BBBB", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T11:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        aircraft: null,
+        live: null,
+      },
+      {
+        flight_date: "2026-09-13",
+        flight_status: "active",
+        flight: { iata: "INVALID_LONG_CODE", icao: "INV1", number: "1", codeshared: null },
+        airline: { name: "Bad Format", iata: "BF", icao: "BFF" },
+        departure: { airport: "A", timezone: "UTC", iata: "AAA", icao: "AAAA", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T10:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        arrival: { airport: "B", timezone: "UTC", iata: "BBB", icao: "BBBB", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T11:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        aircraft: null,
+        live: null,
+      },
+      {
+        flight_date: "2026-09-13",
+        flight_status: "active",
+        flight: { iata: "SU1531", icao: "AFL1531", number: "1531", codeshared: null },
+        airline: { name: "Aeroflot", iata: "SU", icao: "AFL" },
+        departure: { airport: "Sheremetyevo", timezone: "UTC", iata: "SVO", icao: "UUEE", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T10:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        arrival: { airport: "Pulkovo", timezone: "UTC", iata: "LED", icao: "ULLI", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T11:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        aircraft: null,
+        live: null,
+      },
+    ]);
 
-// Service test
-// └── investigateFlight()
-//       └── with mocked Aviationstack data
+    const result = await discoverFlights(10);
 
+    expect(result.flights).toHaveLength(1);
+    expect(result.flights[0].flightNumber).toBe("SU1531");
+    expect(result.flights[0].airlineName).toBe("Aeroflot");
+    expect(result.flights[0].status).toBe("in_flight");
+    expect(result.flights[0].departure.iata).toBe("SVO");
+    expect(result.flights[0].arrival.iata).toBe("LED");
+    expect(result.retrievedAt).toBeDefined();
+  });
+
+  it("deduplicates duplicate flight numbers", async () => {
+    vi.mocked(getRecentFlights).mockResolvedValue([
+      {
+        flight_date: "2026-09-13",
+        flight_status: "scheduled",
+        flight: { iata: "BA249", icao: "BAW249", number: "249", codeshared: null },
+        airline: { name: "British Airways", iata: "BA", icao: "BAW" },
+        departure: { airport: "Heathrow", timezone: "UTC", iata: "LHR", icao: "EGLL", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T10:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        arrival: { airport: "Galeao", timezone: "UTC", iata: "GIG", icao: "SBGL", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T21:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        aircraft: null,
+        live: null,
+      },
+      {
+        flight_date: "2026-09-13",
+        flight_status: "scheduled",
+        flight: { iata: "BA249", icao: "BAW249", number: "249", codeshared: null },
+        airline: { name: "British Airways", iata: "BA", icao: "BAW" },
+        departure: { airport: "Heathrow", timezone: "UTC", iata: "LHR", icao: "EGLL", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T10:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        arrival: { airport: "Galeao", timezone: "UTC", iata: "GIG", icao: "SBGL", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T21:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        aircraft: null,
+        live: null,
+      },
+    ]);
+
+    const result = await discoverFlights(10);
+    expect(result.flights).toHaveLength(1);
+    expect(result.flights[0].flightNumber).toBe("BA249");
+  });
+
+  it("handles empty results gracefully", async () => {
+    vi.mocked(getRecentFlights).mockResolvedValue([]);
+
+    const result = await discoverFlights(10);
+    expect(result.flights).toEqual([]);
+    expect(result.retrievedAt).toBeDefined();
+  });
+
+  it("handles airline_name from alternative provider format", async () => {
+    vi.mocked(getRecentFlights).mockResolvedValue([
+      {
+        flight_date: "2026-09-13",
+        flight_status: "landed",
+        flight: { iata: "LH400", icao: "DLH400", number: "400", codeshared: null },
+        airline: { airline_name: "Lufthansa", iata_code: "LH" } as any,
+        departure: { airport: "Frankfurt", timezone: "UTC", iata: "FRA", icao: "EDDF", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T10:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        arrival: { airport: "JFK", timezone: "UTC", iata: "JFK", icao: "KJFK", terminal: null, gate: null, delay: null, scheduled: "2026-09-13T18:00:00Z", estimated: null, actual: null, estimated_runway: null, actual_runway: null, baggage: null },
+        aircraft: null,
+        live: null,
+      },
+    ]);
+
+    const result = await discoverFlights(10);
+    expect(result.flights).toHaveLength(1);
+    expect(result.flights[0].airlineName).toBe("Lufthansa");
+    expect(result.flights[0].status).toBe("landed");
+  });
+});
 
 //Unit tests
 // ├── getDelayStatus()

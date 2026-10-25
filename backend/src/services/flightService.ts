@@ -18,11 +18,13 @@
 //        ▼
 // FlightResponse
 
-import { getFlight } from "./aviationstackService";
+import { getFlight, getRecentFlights } from "./aviationstackService";
 //typescript-only imports - primarily for ts checking ; not needed when program is actually running.
 import type { AviationstackFlightData } from "../types/aviationstack";
 import type {
   DelayStatus,
+  DiscoveredFlight,
+  DiscoveryResponse,
   FlightResponse,
   FlightStatus,
 } from "../types/flight";
@@ -272,3 +274,74 @@ export async function investigateFlight(
   return transformFlight(flight);
 }
 
+export const flightNumberPattern = /^[A-Z][A-Z0-9]{1,2}\d{1,4}$/;
+
+export async function discoverFlights(limit = 10): Promise<DiscoveryResponse> {
+  const boundedLimit = Math.max(1, Math.min(limit, 30));
+  // Fetch up to 3x requested limit to allow filtering out invalid or duplicate identifiers
+  const fetchLimit = Math.min(50, Math.max(boundedLimit * 3, 15));
+  const rawFlights = await getRecentFlights(fetchLimit);
+
+  const seenFlightNumbers = new Set<string>();
+  const discovered: DiscoveredFlight[] = [];
+
+  for (const raw of rawFlights) {
+    if (!raw || typeof raw !== "object") {
+      continue;
+    }
+
+    const rawFlightNumber = raw.flight?.iata?.trim() || "";
+    const normalizedFlightNumber = rawFlightNumber.toUpperCase();
+
+    // Must be a valid flight number matching domain regex
+    if (!normalizedFlightNumber || !flightNumberPattern.test(normalizedFlightNumber)) {
+      continue;
+    }
+
+    // Must be unique (deduplicate codeshares and multiple leg occurrences)
+    if (seenFlightNumbers.has(normalizedFlightNumber)) {
+      continue;
+    }
+    seenFlightNumbers.add(normalizedFlightNumber);
+
+    const airlineName =
+      (typeof raw.airline === "object" && raw.airline !== null
+        ? "name" in raw.airline && typeof raw.airline.name === "string" && raw.airline.name.trim()
+          ? raw.airline.name.trim()
+          : "airline_name" in raw.airline &&
+              typeof (raw.airline as any).airline_name === "string" &&
+              (raw.airline as any).airline_name.trim()
+            ? (raw.airline as any).airline_name.trim()
+            : ""
+        : "") || "Unknown Airline";
+
+    const departureAirport = raw.departure?.airport?.trim() || "Unknown Airport";
+    const departureIata = raw.departure?.iata?.trim() || "N/A";
+    const arrivalAirport = raw.arrival?.airport?.trim() || "Unknown Airport";
+    const arrivalIata = raw.arrival?.iata?.trim() || "N/A";
+
+    discovered.push({
+      flightNumber: normalizedFlightNumber,
+      airlineName,
+      status: getFlightStatus(raw.flight_status),
+      departure: {
+        airport: departureAirport,
+        iata: departureIata,
+      },
+      arrival: {
+        airport: arrivalAirport,
+        iata: arrivalIata,
+      },
+      flightDate: raw.flight_date || new Date().toISOString().slice(0, 10),
+    });
+
+    if (discovered.length >= boundedLimit) {
+      break;
+    }
+  }
+
+  return {
+    flights: discovered,
+    retrievedAt: new Date().toISOString(),
+  };
+}

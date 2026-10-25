@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { FlightApiError, getFlight } from './services/flightApi'
+import {
+  FlightApiError,
+  getDiscoveredFlights,
+  getFlight,
+} from './services/flightApi'
 import type { FlightResponse } from './types/flight'
 import { FlightDetails } from './components/FlightDetails'
 import { SearchForm } from './components/SearchForm'
@@ -18,6 +22,7 @@ const flightNumberPattern = /^[A-Z][A-Z0-9]{1,2}\d{1,4}$/
 function App() {
   const [flightNumber, setFlightNumber] = useState('')
   const [searchState, setSearchState] = useState<SearchState>({ status: 'initial' })
+  const [surpriseLoading, setSurpriseLoading] = useState(false)
 
   async function handleSearch(value: string) {
     const normalizedFlightNumber = value.trim().toUpperCase()
@@ -49,6 +54,37 @@ function App() {
             : 'Could not reach Flight Detective. Check your connection and try again.',
         })
       }
+    }
+  }
+
+  async function handleSurpriseMe() {
+    setSurpriseLoading(true)
+    try {
+      const discovery = await getDiscoveredFlights()
+      if (!discovery.flights || discovery.flights.length === 0) {
+        setSearchState({
+          status: 'notFound',
+          message: 'No live flights currently discovered. Please search for a specific flight number.',
+        })
+        return
+      }
+
+      // Pick a random real flight from the discovered set
+      const randomIndex = Math.floor(Math.random() * discovery.flights.length)
+      const chosenFlight = discovery.flights[randomIndex]
+
+      setFlightNumber(chosenFlight.flightNumber)
+      await handleSearch(chosenFlight.flightNumber)
+    } catch (error) {
+      setSearchState({
+        status: 'error',
+        message:
+          error instanceof FlightApiError
+            ? error.message
+            : 'Could not discover live flights. Check your connection and try again.',
+      })
+    } finally {
+      setSurpriseLoading(false)
     }
   }
 
@@ -86,6 +122,8 @@ function App() {
               error={searchState.status === 'invalid' ? message : ''}
               onValueChange={setFlightNumber}
               onSubmit={handleSearch}
+              onSurpriseMe={handleSurpriseMe}
+              surpriseLoading={surpriseLoading}
             />
             <div className="search-footnote">
               <span>TRY</span> SU1531 <i /> AI302 <i /> BA249

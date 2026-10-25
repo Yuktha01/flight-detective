@@ -72,4 +72,24 @@ describe('SearchForm', () => {
     expect(screen.getByText('Enter a valid flight number.')).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Flight number' })).toHaveAttribute('aria-invalid', 'true')
   })
-})
+
+  it('renders and invokes the Surprise Me button when onSurpriseMe is provided', async () => {
+    const user = userEvent.setup()
+    const onSurpriseMe = vi.fn()
+    renderSearchForm({ onSurpriseMe })
+
+    const surpriseButton = screen.getByRole('button', { name: 'Surprise Me' })
+    expect(surpriseButton).toBeInTheDocument()
+
+    await user.click(surpriseButton)
+    expect(onSurpriseMe).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables controls and shows picking state when surpriseLoading is true', () => {
+    renderSearchForm({ onSurpriseMe: vi.fn(), surpriseLoading: true })
+
+    expect(screen.getByRole('textbox', { name: 'Flight number' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /investigate/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /picking/i })).toBeDisabled()
+  })
+})

@@ -1,16 +1,17 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { FlightApiError, getFlight } from './services/flightApi'
+import { FlightApiError, getDiscoveredFlights, getFlight } from './services/flightApi'
 import type { FlightResponse } from './types/flight'
 import App from './App'
 
 vi.mock('./services/flightApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./services/flightApi')>()
-  return { ...actual, getFlight: vi.fn() }
+  return { ...actual, getFlight: vi.fn(), getDiscoveredFlights: vi.fn() }
 })
 
 const mockedGetFlight = vi.mocked(getFlight)
+const mockedGetDiscoveredFlights = vi.mocked(getDiscoveredFlights)
 
 const flightResponse: FlightResponse = {
   flight: {
@@ -71,6 +72,7 @@ const flightResponse: FlightResponse = {
 describe('Flight Detective app', () => {
   beforeEach(() => {
     mockedGetFlight.mockReset()
+    mockedGetDiscoveredFlights.mockReset()
   })
 
   it('shows the initial empty state', () => {
@@ -208,5 +210,62 @@ describe('Flight Detective app', () => {
 
     expect(await screen.findByRole('heading', { name: 'We hit a delay on our end' })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('Flight information is temporarily unavailable.')
+  })
+
+  it('selects an available discovered flight and investigates it on Surprise Me', async () => {
+    mockedGetDiscoveredFlights.mockResolvedValue({
+      flights: [
+        {
+          flightNumber: 'SU1531',
+          airlineName: 'Aeroflot',
+          status: 'in_flight',
+          departure: { airport: 'SVO', iata: 'SVO' },
+          arrival: { airport: 'LED', iata: 'LED' },
+          flightDate: '2026-09-28',
+        },
+      ],
+      retrievedAt: '2026-09-28T10:45:00.000Z',
+    })
+    mockedGetFlight.mockResolvedValue(flightResponse)
+
+    const user = userEvent.setup()
+    render(<App />)
+
+    const surpriseButton = screen.getByRole('button', { name: 'Surprise Me' })
+    await user.click(surpriseButton)
+
+    expect(mockedGetDiscoveredFlights).toHaveBeenCalledTimes(1)
+    expect(mockedGetFlight).toHaveBeenCalledWith('SU1531')
+    expect(screen.getByRole('textbox', { name: 'Flight number' })).toHaveValue('SU1531')
+    expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
+  })
+
+  it('displays not-found message when no discovered flights are available', async () => {
+    mockedGetDiscoveredFlights.mockResolvedValue({
+      flights: [],
+      retrievedAt: '2026-09-28T10:45:00.000Z',
+    })
+
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Surprise Me' }))
+
+    expect(await screen.findByRole('heading', { name: 'We could not locate that flight' })).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('No live flights currently discovered.')
+  })
+
+  it('displays an error alert when discovering flights fails', async () => {
+    mockedGetDiscoveredFlights.mockRejectedValue(
+      new FlightApiError('Flight data service is temporarily unavailable.', 503),
+    )
+
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Surprise Me' }))
+
+    expect(await screen.findByRole('heading', { name: 'We hit a delay on our end' })).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('Flight data service is temporarily unavailable.')
   })
 })

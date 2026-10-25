@@ -9,14 +9,16 @@ import {
   UpstreamConnectionError,
   UpstreamTimeoutError,
   getFlight,
+  getRecentFlights,
 } from "../services/aviationstackService";
-import { flightCache } from "../services/flightCache";
+import { discoveryCache, flightCache } from "../services/flightCache";
 
 vi.mock("../services/aviationstackService", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../services/aviationstackService")>();
   return {
     ...actual,
     getFlight: vi.fn(),
+    getRecentFlights: vi.fn(),
   };
 });
 
@@ -89,6 +91,7 @@ describe("GET /api/flights/:flightNumber", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     flightCache.clear();
+    discoveryCache.clear();
   });
 
   it("returns 404 when the flight is not found", async () => {
@@ -355,7 +358,100 @@ describe("GET /api/health", () => {
   });
 });
 
+describe("GET /api/flights/discover", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    discoveryCache.clear();
+  });
 
+  it("returns 200 with discovered flights and X-Cache: MISS on first request", async () => {
+    vi.mocked(getRecentFlights).mockResolvedValue([
+      mockFlightData,
+      {
+        ...mockFlightData,
+        flight: { number: "249", iata: "BA249", icao: "BAW249", codeshared: null },
+        airline: { ...mockFlightData.airline, airline_name: "British Airways", iata_code: "BA" },
+      },
+    ]);
+
+    const response = await request(app).get("/api/flights/discover");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["x-cache"]).toBe("MISS");
+    expect(response.body.flights).toHaveLength(2);
+    expect(response.body.flights[0].flightNumber).toBe("SU1531");
+    expect(response.body.flights[1].flightNumber).toBe("BA249");
+    expect(response.body.retrievedAt).toBeDefined();
+    expect(getRecentFlights).toHaveBeenCalledTimes(1);
+  });
+
+  it("serves subsequent discovery requests from cache with X-Cache: HIT", async () => {
+    vi.mocked(getRecentFlights).mockResolvedValue([mockFlightData]);
+
+    const first = await request(app).get("/api/flights/discover");
+    expect(first.status).toBe(200);
+    expect(first.headers["x-cache"]).toBe("MISS");
+    expect(getRecentFlights).toHaveBeenCalledTimes(1);
+
+    const second = await request(app).get("/api/flights/discover");
+    expect(second.status).toBe(200);
+    expect(second.headers["x-cache"]).toBe("HIT");
+    expect(getRecentFlights).toHaveBeenCalledTimes(1); // Cached, not called again
+  });
+
+  it("bypasses cache when ?refresh=true is provided", async () => {
+    vi.mocked(getRecentFlights).mockResolvedValue([mockFlightData]);
+
+    await request(app).get("/api/flights/discover");
+    expect(getRecentFlights).toHaveBeenCalledTimes(1);
+
+    const refreshResponse = await request(app).get("/api/flights/discover?refresh=true");
+    expect(refreshResponse.status).toBe(200);
+    expect(refreshResponse.headers["x-cache"]).toBe("MISS");
+    expect(getRecentFlights).toHaveBeenCalledTimes(2);
+  });
+
+  it("handles empty results cleanly with 200 and empty flights array", async () => {
+    vi.mocked(getRecentFlights).mockResolvedValue([]);
+
+    const response = await request(app).get("/api/flights/discover");
+    expect(response.status).toBe(200);
+    expect(response.body.flights).toEqual([]);
+  });
+
+  it("maps upstream timeout on discovery to 504 UPSTREAM_TIMEOUT", async () => {
+    vi.mocked(getRecentFlights).mockRejectedValue(new UpstreamTimeoutError());
+
+    const response = await request(app).get("/api/flights/discover");
+    expect(response.status).toBe(504);
+    expect(response.body.error.code).toBe("UPSTREAM_TIMEOUT");
+  });
+
+  it("maps provider quota error on discovery to 503 PROVIDER_QUOTA_EXCEEDED", async () => {
+    vi.mocked(getRecentFlights).mockRejectedValue(new ProviderQuotaError("quota exceeded", 104));
+
+    const response = await request(app).get("/api/flights/discover");
+    expect(response.status).toBe(503);
+    expect(response.body.error.code).toBe("PROVIDER_QUOTA_EXCEEDED");
+  });
+
+  it("maps connection failure on discovery to 502 PROVIDER_ERROR without caching", async () => {
+    vi.mocked(getRecentFlights).mockRejectedValueOnce(
+      new UpstreamConnectionError("ECONNREFUSED"),
+    );
+
+    const first = await request(app).get("/api/flights/discover");
+    expect(first.status).toBe(502);
+    expect(first.body.error.code).toBe("PROVIDER_ERROR");
+
+    // Next request must not return cached failure
+    vi.mocked(getRecentFlights).mockResolvedValueOnce([mockFlightData]);
+    const second = await request(app).get("/api/flights/discover");
+    expect(second.status).toBe(200);
+    expect(second.headers["x-cache"]).toBe("MISS");
+    expect(getRecentFlights).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe("Rate Limiting on /api/flights", () => {
   it("enforces the rate limit on /api/flights while keeping /api/health accessible", async () => {

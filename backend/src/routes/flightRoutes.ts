@@ -7,8 +7,8 @@ import {
   UpstreamConnectionError,
   UpstreamTimeoutError,
 } from "../services/aviationstackService";
-import { flightCache } from "../services/flightCache";
-import { investigateFlight } from "../services/flightService";
+import { discoveryCache, flightCache } from "../services/flightCache";
+import { discoverFlights, investigateFlight } from "../services/flightService";
 
 const router = Router();
 
@@ -69,6 +69,30 @@ function handleRouteError(res: Response, error: unknown, context: string) {
   });
 }
 
+// Discovery endpoint: returns a bounded, deduplicated list of real flights
+router.get("/discover", async (req, res) => {
+  try {
+    const isRefresh = req.query.refresh === "true";
+
+    if (!isRefresh) {
+      const cached = discoveryCache.get("current");
+      if (cached !== undefined) {
+        res.setHeader("X-Cache", "HIT");
+        res.json(cached);
+        return;
+      }
+    }
+
+    const discovery = await discoverFlights(10);
+
+    res.setHeader("X-Cache", "MISS");
+    // Cache discovery results for 60 seconds
+    discoveryCache.set("current", discovery, 60);
+    res.json(discovery);
+  } catch (error) {
+    handleRouteError(res, error, "flight discovery");
+  }
+});
 
 router.get("/:flightNumber", async (req, res) => {
   try {

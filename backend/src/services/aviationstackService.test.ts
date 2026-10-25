@@ -7,6 +7,7 @@ import {
   UpstreamConnectionError,
   UpstreamTimeoutError,
   getFlight,
+  getRecentFlights,
 } from "./aviationstackService";
 
 describe("aviationstackService - getFlight", () => {
@@ -136,3 +137,54 @@ describe("aviationstackService - getFlight", () => {
   });
 });
 
+describe("aviationstackService - getRecentFlights", () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv, AVIATIONSTACK_API_KEY: "test_key" };
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it("returns recent flight list from provider", async () => {
+    const mockFlights = [
+      { flight_date: "2026-09-13", flight: { iata: "SU1531" } },
+      { flight_date: "2026-09-13", flight: { iata: "BA249" } },
+    ];
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        pagination: { limit: 10, offset: 0, count: 2, total: 2 },
+        data: mockFlights,
+      }),
+    } as unknown as Response);
+
+    const result = await getRecentFlights(10);
+    expect(result).toEqual(mockFlights);
+  });
+
+  it("handles upstream timeout on discovery call", async () => {
+    const timeoutError = new DOMException("The operation was aborted", "TimeoutError");
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(timeoutError);
+
+    await expect(getRecentFlights(10)).rejects.toThrow(UpstreamTimeoutError);
+  });
+
+  it("handles empty data array from provider", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        pagination: { limit: 10, offset: 0, count: 0, total: 0 },
+        data: [],
+      }),
+    } as unknown as Response);
+
+    const result = await getRecentFlights(10);
+    expect(result).toEqual([]);
+  });
+});

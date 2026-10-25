@@ -1,4 +1,4 @@
-import type { FlightResponse } from "../types/flight";
+import type { DiscoveryResponse, FlightResponse } from "../types/flight";
 
 interface CacheEntry<T> {
   data: T;
@@ -76,3 +76,4 @@ export class FlightCache<T = FlightResponse | null> {
 
 // Global cache instance for route handlers
 export const flightCache = new FlightCache<FlightResponse | null>(500);
+export const discoveryCache = new FlightCache<DiscoveryResponse>(10);

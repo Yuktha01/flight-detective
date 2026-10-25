@@ -99,3 +99,23 @@ export interface FlightResponse {
   retrievedAt: string;
 }
 
+export interface DiscoveredFlight {
+  flightNumber: string;
+  airlineName: string;
+  status: FlightStatus;
+  departure: {
+    airport: string;
+    iata: string;
+  };
+  arrival: {
+    airport: string;
+    iata: string;
+  };
+  flightDate: string;
+}
+
+export interface DiscoveryResponse {
+  flights: DiscoveredFlight[];
+  retrievedAt: string;
+}
+
