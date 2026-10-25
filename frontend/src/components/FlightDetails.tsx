@@ -137,12 +137,18 @@ function DelayInsight({ flight }: FlightDetailsProps) {
       <div className="insight-copy">
         <p className="section-kicker">DELAY INSIGHT</p>
         <h3 id="insight-heading">{flight.insight.summary || 'No delay insight is available.'}</h3>
-        <p>{delayMinutes > 0 ? `Insight delay: ${delayMinutes} minutes` : 'Insight delay: none reported'}</p>
+        <p>
+          {delayMinutes !== null && delayMinutes > 0
+            ? `Insight delay: ${delayMinutes} minutes`
+            : delayMinutes === 0
+              ? 'Insight delay: none reported'
+              : 'Insight delay: data unavailable'}
+        </p>
       </div>
       <span className={`delay-tag delay-${flight.insight.delayStatus}`}>{flight.insight.delayStatus.replaceAll('_', ' ')}</span>
       <dl className="delay-breakdown">
-        <div><dt>Departure</dt><dd>{flight.departure.delayMinutes} min</dd></div>
-        <div><dt>Arrival</dt><dd>{flight.arrival.delayMinutes} min</dd></div>
+        <div><dt>Departure</dt><dd>{flight.departure.delayMinutes !== null ? `${flight.departure.delayMinutes} min` : 'Unavailable'}</dd></div>
+        <div><dt>Arrival</dt><dd>{flight.arrival.delayMinutes !== null ? `${flight.arrival.delayMinutes} min` : 'Unavailable'}</dd></div>
       </dl>
     </section>
   )

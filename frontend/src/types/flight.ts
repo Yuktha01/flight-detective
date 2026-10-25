@@ -11,7 +11,11 @@ export type DelayStatus =
   | "on_time"
   | "minor_delay"
   | "delayed"
-  | "significant_delay";
+  | "significant_delay"
+  | "unknown"
+  | "cancelled"
+  | "diverted"
+  | "incident";
 
 export interface FlightResponse {
   flight: {
@@ -43,16 +47,16 @@ export interface FlightResponse {
     };
   };
   departure: {
-    scheduled: string;
+    scheduled: string | null;
     estimated: string | null;
     actual: string | null;
-    delayMinutes: number;
+    delayMinutes: number | null;
   };
   arrival: {
-    scheduled: string;
+    scheduled: string | null;
     estimated: string | null;
     actual: string | null;
-    delayMinutes: number;
+    delayMinutes: number | null;
   };
   aircraft: {
     registration: string | null;
@@ -70,10 +74,16 @@ export interface FlightResponse {
     isGround: boolean | null;
   } | null;
   insight: {
-    delayMinutes: number;
+    delayMinutes: number | null;
     delayStatus: DelayStatus;
     summary: string;
   };
+  /**
+   * ISO 8601 timestamp recording when the Flight Detective application
+   * retrieved and transformed this flight record from the upstream provider.
+   * Note: This reflects the application fetch time, not the upstream provider's radar freshness.
+   */
+  retrievedAt: string;
 }
 
 export interface FlightApiErrorResponse {

@@ -85,30 +85,62 @@ const mockFlight = {
 };
 
 describe("getDelayStatus", () => {
-  it("returns on_time for 0 minutes", () => {
+  it("returns on_time for 0 minutes on confirmed flights", () => {
     expect(getDelayStatus(0)).toBe("on_time");
+    expect(getDelayStatus(0, "scheduled")).toBe("on_time");
+    expect(getDelayStatus(0, "in_flight")).toBe("on_time");
+    expect(getDelayStatus(0, "landed")).toBe("on_time");
   });
 
-  it("returns minor_delay for 1 minute", () => {
+  it("returns minor_delay for 1 to 14 minutes", () => {
     expect(getDelayStatus(1)).toBe("minor_delay");
-  });
-
-  it("returns minor_delay for 14 minutes", () => {
     expect(getDelayStatus(14)).toBe("minor_delay");
   });
 
-  it("returns delayed for 15 minutes", () => {
+  it("returns delayed for 15 to 59 minutes", () => {
     expect(getDelayStatus(15)).toBe("delayed");
-  });
-
-  it("returns delayed for 59 minutes", () => {
     expect(getDelayStatus(59)).toBe("delayed");
   });
 
-  it("returns significant_delay for 60 minutes", () => {
+  it("returns significant_delay for 60+ minutes", () => {
     expect(getDelayStatus(60)).toBe("significant_delay");
+    expect(getDelayStatus(120)).toBe("significant_delay");
   });
 
+  it("returns unknown when delay is null or undefined", () => {
+    expect(getDelayStatus(null)).toBe("unknown");
+    expect(getDelayStatus(undefined as any)).toBe("unknown");
+    expect(getDelayStatus(null, "scheduled")).toBe("unknown");
+  });
+
+  it("returns on_time for negative delays on confirmed flights", () => {
+    expect(getDelayStatus(-10, "in_flight")).toBe("on_time");
+  });
+
+  it("returns unknown when flight status is unknown even if delay is 0 or negative", () => {
+    expect(getDelayStatus(0, "unknown")).toBe("unknown");
+    expect(getDelayStatus(-5, "unknown")).toBe("unknown");
+  });
+
+  it("returns cancelled when flight status is cancelled regardless of delay", () => {
+    expect(getDelayStatus(0, "cancelled")).toBe("cancelled");
+    expect(getDelayStatus(45, "cancelled")).toBe("cancelled");
+    expect(getDelayStatus(null, "cancelled")).toBe("cancelled");
+  });
+
+  it("returns diverted when flight status is diverted", () => {
+    expect(getDelayStatus(0, "diverted")).toBe("diverted");
+    expect(getDelayStatus(30, "diverted")).toBe("diverted");
+    expect(getDelayStatus(null, "diverted")).toBe("diverted");
+  });
+
+  it("returns incident when flight status is incident", () => {
+    expect(getDelayStatus(0, "incident")).toBe("incident");
+    expect(getDelayStatus(null, "incident")).toBe("incident");
+  });
+});
+
+describe("getDelaySummary", () => {
   it("returns the correct summary for an on-time flight", () => {
     expect(getDelaySummary("on_time", 0)).toBe(
       "This flight is currently on time.",
@@ -133,8 +165,46 @@ describe("getDelayStatus", () => {
     );
   });
 
-  it("transforms a flight returned by Aviationstack", async () => {
-    vi.mocked(getFlight).mockResolvedValue(mockFlight); //When investigateFlight() calls getFlight(), pretend the external API returned mockFlight.
+  it("returns cancelled summary for cancelled flights", () => {
+    expect(getDelaySummary("cancelled", null, "cancelled")).toBe(
+      "This flight is cancelled.",
+    );
+  });
+
+  it("returns diverted summary for diverted flights", () => {
+    expect(getDelaySummary("diverted", null, "diverted")).toBe(
+      "This flight has been diverted.",
+    );
+  });
+
+  it("returns incident summary for incident flights", () => {
+    expect(getDelaySummary("incident", null, "incident")).toBe(
+      "An incident has been reported for this flight.",
+    );
+  });
+
+  it("returns honest unknown status summaries without claiming on-time", () => {
+    expect(getDelaySummary("unknown", 0, "unknown")).toBe(
+      "Flight operational status is unknown; no departure delay is reported.",
+    );
+    expect(getDelaySummary("unknown", null, "unknown")).toBe(
+      "Flight status and delay information are currently unavailable.",
+    );
+    expect(getDelaySummary("unknown", null, "scheduled")).toBe(
+      "This flight is scheduled, but delay details are currently unavailable.",
+    );
+    expect(getDelaySummary("unknown", null, "in_flight")).toBe(
+      "This flight is in flight, but delay details are currently unavailable.",
+    );
+    expect(getDelaySummary("unknown", null, "landed")).toBe(
+      "This flight has landed, but delay details were not reported.",
+    );
+  });
+});
+
+describe("investigateFlight", () => {
+  it("transforms a normal delayed flight returned by Aviationstack", async () => {
+    vi.mocked(getFlight).mockResolvedValue(mockFlight);
 
     const result = await investigateFlight("SU1531");
 
@@ -146,15 +216,185 @@ describe("getDelayStatus", () => {
     expect(result?.insight.summary).toBe(
       "This flight is delayed by 25 minutes.",
     );
+    expect(result?.retrievedAt).toBeDefined();
+    expect(new Date(result!.retrievedAt).toISOString()).toBe(result!.retrievedAt);
   });
 
-  it("uses an unknown status when Aviationstack omits the flight status", async () => {
+  it("handles zero delay accurately for an on-time active flight", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      flight_status: "active",
+      departure: {
+        ...mockFlight.departure,
+        delay: 0,
+      },
+      arrival: {
+        ...mockFlight.arrival,
+        delay: 0,
+      },
+    });
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.flight.status).toBe("in_flight");
+    expect(result?.departure.delayMinutes).toBe(0);
+    expect(result?.arrival.delayMinutes).toBe(0);
+    expect(result?.insight.delayMinutes).toBe(0);
+    expect(result?.insight.delayStatus).toBe("on_time");
+    expect(result?.insight.summary).toBe("This flight is currently on time.");
+  });
+
+  it("preserves negative delays without fabricating a zero-minute delay", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      flight_status: "active",
+      departure: {
+        ...mockFlight.departure,
+        delay: -15,
+      },
+    });
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.flight.status).toBe("in_flight");
+    expect(result?.departure.delayMinutes).toBe(-15);
+    expect(result?.insight.delayMinutes).toBe(-15);
+    expect(result?.insight.delayStatus).toBe("on_time");
+    expect(result?.insight.summary).toBe("This flight is currently on time.");
+  });
+
+  it("handles null or missing delay without defaulting to zero", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      departure: {
+        ...mockFlight.departure,
+        delay: null,
+      },
+      arrival: {
+        ...mockFlight.arrival,
+        delay: null,
+      },
+    });
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.departure.delayMinutes).toBeNull();
+    expect(result?.arrival.delayMinutes).toBeNull();
+    expect(result?.insight.delayMinutes).toBeNull();
+    expect(result?.insight.delayStatus).toBe("unknown");
+    expect(result?.insight.summary).toBe(
+      "This flight is scheduled, but delay details are currently unavailable.",
+    );
+  });
+
+  it("handles cancelled flights correctly without claiming on-time", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      flight_status: "cancelled",
+      departure: {
+        ...mockFlight.departure,
+        delay: 0, // Provider reported 0, but status is cancelled
+      },
+    });
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.flight.status).toBe("cancelled");
+    expect(result?.insight.delayStatus).toBe("cancelled");
+    expect(result?.insight.summary).toBe("This flight is cancelled.");
+    expect(result?.insight.delayMinutes).toBeNull();
+  });
+
+  it("handles diverted flights correctly", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      flight_status: "diverted",
+      departure: {
+        ...mockFlight.departure,
+        delay: 20,
+      },
+    });
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.flight.status).toBe("diverted");
+    expect(result?.insight.delayStatus).toBe("diverted");
+    expect(result?.insight.summary).toBe("This flight has been diverted.");
+  });
+
+  it("handles incident flights correctly", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      flight_status: "incident",
+    });
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.flight.status).toBe("incident");
+    expect(result?.insight.delayStatus).toBe("incident");
+    expect(result?.insight.summary).toBe(
+      "An incident has been reported for this flight.",
+    );
+  });
+
+  it("uses an unknown status when Aviationstack omits the flight status and avoids claiming on-time for 0 delay", async () => {
     const { flight_status: _flightStatus, ...flightWithoutStatus } = mockFlight;
-    vi.mocked(getFlight).mockResolvedValue(flightWithoutStatus);
+    vi.mocked(getFlight).mockResolvedValue({
+      ...flightWithoutStatus,
+      departure: {
+        ...mockFlight.departure,
+        delay: 0,
+      },
+    });
 
     const result = await investigateFlight("SU1531");
 
     expect(result?.flight.status).toBe("unknown");
+    expect(result?.insight.delayStatus).toBe("unknown");
+    expect(result?.insight.summary).toBe(
+      "Flight operational status is unknown; no departure delay is reported.",
+    );
+  });
+
+  it("handles unexpected status strings by mapping them to unknown", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      // @ts-expect-error Testing unrecognized provider string
+      flight_status: "unrecognized_status",
+    });
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.flight.status).toBe("unknown");
+  });
+
+  it("preserves missing scheduled, estimated, and actual timestamps without inferring values", async () => {
+    vi.mocked(getFlight).mockResolvedValue({
+      ...mockFlight,
+      departure: {
+        ...mockFlight.departure,
+        // @ts-expect-error Simulating missing scheduled timestamp
+        scheduled: null,
+        estimated: null,
+        actual: null,
+      },
+      arrival: {
+        ...mockFlight.arrival,
+        // @ts-expect-error Simulating missing scheduled timestamp
+        scheduled: null,
+        estimated: null,
+        actual: null,
+      },
+    });
+
+    const result = await investigateFlight("SU1531");
+
+    expect(result?.departure.scheduled).toBeNull();
+    expect(result?.departure.estimated).toBeNull();
+    expect(result?.departure.actual).toBeNull();
+    expect(result?.arrival.scheduled).toBeNull();
+    expect(result?.arrival.estimated).toBeNull();
+    expect(result?.arrival.actual).toBeNull();
   });
 
   it("maps the compact airline fields returned by Aviationstack", async () => {
@@ -180,6 +420,15 @@ describe("getDelayStatus", () => {
     expect(result).toBeNull();
   });
 });
+
+//Unit tests
+// ├── getDelayStatus()
+// └── getDelaySummary()
+
+// Service test
+// └── investigateFlight()
+//       └── with mocked Aviationstack data
+
 
 //Unit tests
 // ├── getDelayStatus()

@@ -104,3 +104,12 @@ export interface AviationstackFlightsResponse {
   pagination: AviationstackPagination; //{}
   data: AviationstackFlightData[]; //complete api respones will be an array []
 }
+
+export interface AviationstackErrorEnvelope {
+  error: {
+    code: number | string;
+    type?: string;
+    info?: string;
+    message?: string;
+  };
+}

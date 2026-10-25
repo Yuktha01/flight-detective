@@ -65,6 +65,7 @@ const flightResponse: FlightResponse = {
     delayStatus: 'delayed',
     summary: 'This flight is delayed by 15 minutes.',
   },
+  retrievedAt: '2026-09-28T10:45:00.000Z',
 }
 
 describe('Flight Detective app', () => {
@@ -208,4 +209,4 @@ describe('Flight Detective app', () => {
     expect(await screen.findByRole('heading', { name: 'We hit a delay on our end' })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('Flight information is temporarily unavailable.')
   })
-})
+})
