@@ -16,12 +16,13 @@ export class FlightApiError extends Error {
   }
 }
 
-export async function getFlight(flightNumber: string): Promise<FlightResponse> {
+export async function getFlight(flightNumber: string, refresh = false): Promise<FlightResponse> {
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '')
     .trim()
     .replace(/\/+$/, '')
+  const query = refresh ? '?refresh=true' : ''
   const response = await fetch(
-    `${apiBaseUrl}/api/flights/${encodeURIComponent(flightNumber)}`,
+    `${apiBaseUrl}/api/flights/${encodeURIComponent(flightNumber)}${query}`,
   );
   const data = (await response.json()) as
     | FlightResponse

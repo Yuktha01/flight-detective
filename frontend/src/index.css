@@ -1,162 +1,151 @@
+/* ==========================================================================
+   Flight Detective — Editorial Noir × Future in Motion Design System
+   ========================================================================== */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Editorial Noir Palette: Calibrated for laptop & external displays */
+  --bg-base: #07090e;
+  --bg-canvas: #0b0e17;
+  --bg-card: #101522;
+  --bg-card-elevated: #161c2d;
+  --bg-card-hover: #1c2438;
+  --bg-subtle: rgba(255, 255, 255, 0.04);
+  --bg-glass: rgba(16, 21, 34, 0.88);
 
-  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
-  --heading: system-ui, "Segoe UI", Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Technical Hairlines & Machined Borders */
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-bright: rgba(255, 255, 255, 0.26);
+  --border-highlight: rgba(212, 252, 52, 0.35);
+  --border-active: #d4fc34;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  /* Editorial Typography & WCAG-compliant Contrast */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  /* Aviation Signals & Accents (Calibrated Luminance) */
+  --signal-lime: #d4fc34;
+  --signal-lime-hover: #e0fd63;
+  --signal-lime-glow: rgba(212, 252, 52, 0.22);
+  --signal-cyan: #38bdf8;
+  --signal-cyan-hover: #60a5fa;
+  --signal-cyan-glow: rgba(56, 189, 248, 0.22);
+
+  /* Flight Status Semantics (Solid tint + high contrast) */
+  --status-ontime: #4ade80;
+  --status-ontime-bg: rgba(34, 197, 94, 0.18);
+  --status-ontime-border: rgba(74, 222, 128, 0.4);
+
+  --status-delayed: #fbbf24;
+  --status-delayed-bg: rgba(245, 158, 11, 0.18);
+  --status-delayed-border: rgba(251, 191, 36, 0.4);
+
+  --status-cancelled: #f87171;
+  --status-cancelled-bg: rgba(239, 68, 68, 0.2);
+  --status-cancelled-border: rgba(248, 113, 113, 0.45);
+
+  --status-inflight: #38bdf8;
+  --status-inflight-bg: rgba(56, 189, 248, 0.18);
+  --status-inflight-border: rgba(56, 189, 248, 0.45);
+
+  --status-incident: #fb923c;
+  --status-incident-bg: rgba(249, 115, 22, 0.18);
+  --status-incident-border: rgba(251, 146, 60, 0.45);
+
+  --status-unknown: #cbd5e1;
+  --status-unknown-bg: rgba(148, 163, 184, 0.14);
+  --status-unknown-border: rgba(148, 163, 184, 0.35);
+
+  /* Typography Stacks */
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', "Cascadia Code", "SF Mono", Consolas, monospace;
+
+  /* Shadows & Inset Rim Illumination */
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 6px 20px -2px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-lg: 0 16px 40px -4px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --shadow-glow: 0 0 24px var(--signal-lime-glow);
+
+  /* Default Font & Engine */
+  font-family: var(--font-sans);
+  color-scheme: dark;
+  color: var(--text-primary);
+  background-color: var(--bg-base);
+  font-size: 15px;
+  line-height: 1.5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* CSS Reset & Global Layout */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html, body {
+  min-height: 100vh;
+  min-width: 320px;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+body {
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.05) 0%, transparent 65%),
+    radial-gradient(circle at 100% 100%, rgba(210, 252, 56, 0.03) 0%, transparent 50%);
+  background-attachment: fixed;
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
-
-:root {
-  --paper: #f7f9f5;
-  --ink: #1b2b24;
-  --muted: #68776e;
-  --line: #dce4dc;
-  --forest: #12332e;
-  --signal: #c7ed72;
-  --leaf: #75a945;
-  --danger: #b54f3b;
-  --display: Georgia, "Times New Roman", serif;
-  --sans: "Aptos", "Trebuchet MS", sans-serif;
-  --mono: "Cascadia Mono", Consolas, monospace;
-
-  color: var(--ink);
-  background: #e9eee8;
-  color-scheme: light;
-  font-family: var(--sans);
-  font-size: 14px;
-  font-synthesis: none;
-  font-weight: 400;
-  letter-spacing: 0;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-}
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-}
-button,
-input {
-  font: inherit;
-}
+/* Accessible Focus States */
 button:focus-visible,
+input:focus-visible,
 a:focus-visible {
-  outline: 3px solid #7ba753;
+  outline: 2px solid var(--signal-lime);
   outline-offset: 3px;
 }
+
 ::selection {
-  color: var(--ink);
-  background: #d7efaa;
+  background-color: var(--signal-lime);
+  color: #07090d;
 }
-#root {
-  min-height: 100vh;
+
+/* Typography Defaults */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+p {
+  color: var(--text-secondary);
+}
+
+button, input {
+  font: inherit;
+}
+
+/* Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

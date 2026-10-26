@@ -35,6 +35,14 @@ describe('flightApi base URL and endpoints', () => {
     )
   })
 
+  it('appends ?refresh=true when refresh is requested', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', '')
+
+    await getFlight('SU1531', true)
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/flights/SU1531?refresh=true')
+  })
+
   it('fetches discovered flights using relative URL when base URL is empty', async () => {
     vi.stubEnv('VITE_API_BASE_URL', '')
 

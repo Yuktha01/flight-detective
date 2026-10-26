@@ -268,4 +268,33 @@ describe('Flight Detective app', () => {
     expect(await screen.findByRole('heading', { name: 'We hit a delay on our end' })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('Flight data service is temporarily unavailable.')
   })
+
+  it('investigates a flight when clicking a quick route chip', async () => {
+    mockedGetFlight.mockResolvedValue(flightResponse)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'BA249' }))
+
+    expect(mockedGetFlight).toHaveBeenCalledWith('BA249')
+    expect(screen.getByRole('textbox', { name: 'Flight number' })).toHaveValue('BA249')
+  })
+
+  it('refreshes flight data with cache bypass when clicking the refresh button', async () => {
+    mockedGetFlight.mockResolvedValue(flightResponse)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'su1531')
+    await user.click(screen.getByRole('button', { name: /investigate/i }))
+
+    expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
+    expect(mockedGetFlight).toHaveBeenCalledTimes(1)
+
+    const refreshButton = screen.getByRole('button', { name: 'Refresh flight data' })
+    await user.click(refreshButton)
+
+    expect(mockedGetFlight).toHaveBeenCalledTimes(2)
+    expect(mockedGetFlight).toHaveBeenLastCalledWith('SU1531', true)
+  })
 })
