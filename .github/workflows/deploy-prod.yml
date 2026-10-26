@@ -22,11 +22,16 @@ env:
 jobs:
   deploy-backend:
     name: Deploy Backend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Configure Docker daemon for ECR compatibility
+        run: |
+          echo '{"features":{"containerd-snapshotter":false}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -46,7 +51,7 @@ jobs:
         run: |
           IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
 
-          docker build -t "$IMAGE_URI" .
+          docker build --provenance=false -t "$IMAGE_URI" .
           docker push "$IMAGE_URI"
 
           echo "image=$IMAGE_URI" >> "$GITHUB_OUTPUT"
@@ -76,7 +81,7 @@ jobs:
 
   deploy-frontend:
     name: Deploy Frontend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: deploy-backend
 
     steps:
