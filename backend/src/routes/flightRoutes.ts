@@ -9,6 +9,7 @@ import {
 } from "../services/aviationstackService";
 import { discoveryCache, flightCache } from "../services/flightCache";
 import { discoverFlights, investigateFlight } from "../services/flightService";
+import { sanitizeLog } from "../utils/sanitize";
 
 const router = Router();
 
@@ -35,7 +36,7 @@ function handleRouteError(res: Response, error: unknown, context: string) {
   }
 
   if (error instanceof ProviderAuthError) {
-    console.error(`Upstream authentication error during ${context}:`, error.message);
+    console.error(`Upstream authentication error during ${context}:`, sanitizeLog(error.message));
     res.status(500).json({
       error: {
         code: "FLIGHT_DATA_UNAVAILABLE",
@@ -50,7 +51,7 @@ function handleRouteError(res: Response, error: unknown, context: string) {
     error instanceof MalformedProviderResponseError ||
     error instanceof UpstreamConnectionError
   ) {
-    console.error(`Upstream provider failure during ${context}:`, error.message);
+    console.error(`Upstream provider failure during ${context}:`, sanitizeLog(error.message));
     res.status(502).json({
       error: {
         code: "PROVIDER_ERROR",
@@ -60,7 +61,7 @@ function handleRouteError(res: Response, error: unknown, context: string) {
     return;
   }
 
-  console.error(`Unhandled error during ${context}:`, error);
+  console.error(`Unhandled error during ${context}:`, sanitizeLog(error));
   res.status(500).json({
     error: {
       code: "FLIGHT_DATA_UNAVAILABLE",

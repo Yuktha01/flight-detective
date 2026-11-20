@@ -3,8 +3,12 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { getAllowedOrigins, getRateLimitConfig } from "./config";
 import flightRoutes from "./routes/flightRoutes";
+import { sanitizeLog } from "./utils/sanitize";
 
 const app = express();
+// Express trust proxy is disabled so rate limiting uses the adapter's trusted socket remote address (sourceIp),
+// ignoring caller-controlled X-Forwarded-For headers.
+app.set("trust proxy", false);
 
 export class CorsForbiddenError extends Error {
   constructor(message = "Cross-origin request not allowed.") {
@@ -48,6 +52,7 @@ export const flightRateLimiter = rateLimit({
   limit: rateLimitConfig.max,
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   handler: (_req, res) => {
     res.status(429).json({
       error: {
@@ -61,35 +66,39 @@ export const flightRateLimiter = rateLimit({
 app.use("/api/flights", flightRateLimiter, flightRoutes);
 
 // Custom error middleware ensuring all errors (including CORS rejection) return clean JSON
-app.use(
-  (
-    err: unknown,
-    _req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction,
-  ) => {
-    if (
-      err instanceof CorsForbiddenError ||
-      (err instanceof Error &&
-        (err.name === "CorsForbiddenError" || err.message.includes("not allowed by CORS")))
-    ) {
-      res.status(403).json({
-        error: {
-          code: "CORS_FORBIDDEN",
-          message: "Cross-origin request not allowed.",
-        },
-      });
-      return;
-    }
-
-    console.error("Unhandled server error:", err);
-    res.status(500).json({
+const errorHandler: express.ErrorRequestHandler = (
+  err: unknown,
+  _req: express.Request,
+  res: express.Response,
+  _next: express.NextFunction,
+) => {
+  if (
+    err instanceof CorsForbiddenError ||
+    (err instanceof Error &&
+      (err.name === "CorsForbiddenError" || err.message.includes("not allowed by CORS")))
+  ) {
+    res.status(403).json({
       error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: "An internal server error occurred.",
+        code: "CORS_FORBIDDEN",
+        message: "Cross-origin request not allowed.",
       },
     });
-  },
-);
+    return;
+  }
 
+  const errorName = err instanceof Error ? err.name : "UnknownError";
+  const sanitizedMessage = sanitizeLog(err);
+
+  console.error(`Unhandled server error [${errorName}]: ${sanitizedMessage}`);
+  res.status(500).json({
+    error: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "An internal server error occurred.",
+    },
+  });
+};
+
+app.use(errorHandler);
+
+export { app, errorHandler };
 export default app;

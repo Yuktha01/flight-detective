@@ -5,6 +5,7 @@ import type {
   AviationstackFlightData,
   AviationstackFlightsResponse,
 } from "../types/aviationstack";
+import { sanitizeLog } from "../utils/sanitize";
 
 const AVIATIONSTACK_URL = "https://api.apilayer.net/aviationstack/v1/flights";
 
@@ -88,7 +89,9 @@ async function fetchAviationstackFlights(
       throw new UpstreamTimeoutError();
     }
     throw new UpstreamConnectionError(
-      error instanceof Error ? error.message : "Network connection failed",
+      error instanceof Error
+        ? sanitizeLog(error.message)
+        : "Network connection failed",
     );
   }
 
