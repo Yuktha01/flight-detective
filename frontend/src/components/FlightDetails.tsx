@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import type { FlightResponse, FlightStatus } from '../types/flight'
 
 interface FlightDetailsProps {
@@ -34,6 +35,30 @@ function formatFlightDate(value: string | null | undefined) {
     year: 'numeric',
   }).format(date)
 }
+
+function formatTicketDate(value: string | null | undefined) {
+  if (!value?.trim()) return '---'
+  const date = new Date(value.includes('T') ? value : `${value}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date).toUpperCase()
+}
+
+function formatTicketTime(value: string | null | undefined) {
+  if (!value?.trim()) return '---'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date)
+}
+
+
 
 function formatLiveNumber(value: number | null | undefined, format: (value: number) => string) {
   return typeof value === 'number' && Number.isFinite(value)
@@ -192,12 +217,31 @@ function FlightSummary({ flight, onRefresh, isRefreshing }: FlightDetailsProps) 
 function DelayInsight({ flight }: FlightDetailsProps) {
   const delayMinutes = flight.insight.delayMinutes
   const isLanded = flight.flight.status === 'landed'
+  const isDelayUnavailable =
+    delayMinutes === null ||
+    flight.insight.delayStatus === 'unknown' ||
+    (flight.departure.delayMinutes === null && flight.arrival.delayMinutes === null)
 
   return (
     <section className="insight-section lead-insight-card" aria-labelledby="insight-heading">
       <div className="insight-main-row">
-        <div className="insight-icon-frame" aria-hidden="true">
+        <div
+          className="insight-icon-frame"
+          {...(isDelayUnavailable
+            ? {
+                tabIndex: 0,
+                role: 'note',
+                'aria-label': 'Delay data is not provided by the API provider',
+                title: 'Not provided by API provider',
+              }
+            : { 'aria-hidden': 'true' })}
+        >
           <span>i</span>
+          {isDelayUnavailable && (
+            <span className="insight-tooltip" role="tooltip">
+              Not provided by API provider
+            </span>
+          )}
         </div>
         <div className="insight-copy">
           <p className="section-kicker">DELAY INSIGHT</p>
@@ -233,111 +277,977 @@ function DelayInsight({ flight }: FlightDetailsProps) {
   )
 }
 
+const W = 800
+const H = 300
+const PX = 600
+const OY = 20
+const SH = 470
+const ST = 6
+const N = H / ST
+
+interface FreeState {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  rot: number
+  vr: number
+  held: boolean
+  lx: number
+  ly: number
+  ox: number
+  oy: number
+  rest?: number
+  end?: 'fade' | 'crumple' | 'plane'
+  k?: number
+  s?: number
+  shaped?: number
+  done?: number
+}
+
+interface Chad {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  r: number
+  vr: number
+  s: number
+  l: number
+}
+
+interface PointerSample {
+  x: number
+  y: number
+  t: number
+}
+
 function FlightRoute({ flight }: FlightDetailsProps) {
+  const [isTorn, setIsTorn] = useState(false)
+
+  const boxRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const tRef = useRef<HTMLDivElement>(null)
+  const mnRef = useRef<HTMLDivElement>(null)
+  const fibRef = useRef<HTMLDivElement>(null)
+  const attRef = useRef<HTMLDivElement>(null)
+  const fwRef = useRef<HTMLDivElement>(null)
+  const fsRef = useRef<HTMLDivElement>(null)
+  const grabRef = useRef<HTMLDivElement>(null)
+  const perfRef = useRef<HTMLDivElement>(null)
+  const frRef = useRef<HTMLDivElement>(null)
+  const friRef = useRef<HTMLDivElement>(null)
+  const cvRef = useRef<HTMLCanvasElement>(null)
+  const msgRef = useRef<HTMLSpanElement>(null)
+
+  const dRef = useRef<number[]>([])
+  const frontRef = useRef<number>(0)
+  const angRef = useRef<number>(5)
+  const angVRef = useRef<number>(0)
+  const angTRef = useRef<number>(5)
+  const stateRef = useRef<'idle' | 'drag' | 'auto' | 'free'>('idle')
+  const freeRef = useRef<FreeState | null>(null)
+  const chadYRef = useRef<number>(0)
+  const lastFRef = useRef<number>(0)
+  const st0Ref = useRef<{ x: number; y: number; f: number } | null>(null)
+  const psRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const lastPctRef = useRef<number>(-1)
+  const chRef = useRef<Chad[]>([])
+  const sRef = useRef<number>(1)
+  const isTornRef = useRef<boolean>(false)
+  const soundOnRef = useRef<boolean>(true)
+  const autoTimerRef = useRef<number | null>(null)
+  const autoDispenseTimerRef = useRef<number | null>(null)
+  const rafIdRef = useRef<number>(0)
+  const runningRef = useRef<boolean>(true)
+  const pointerHistoryRef = useRef<PointerSample[]>([])
+  const releaseThrowRef = useRef<() => void>(() => {})
+
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const noiseGainRef = useRef<GainNode | null>(null)
+  const bpFilterRef = useRef<BiquadFilterNode | null>(null)
+  const cxRef = useRef<CanvasRenderingContext2D | null>(null)
+
+  const initAudio = () => {
+    if (audioCtxRef.current) {
+      if (audioCtxRef.current.state === 'suspended' && audioCtxRef.current.resume) {
+        audioCtxRef.current.resume().catch(() => {})
+      }
+      return
+    }
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+      const b = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate)
+      const c = b.getChannelData(0)
+      for (let i = 0; i < c.length; i++) c[i] = Math.random() * 2 - 1
+      const s = ctx.createBufferSource()
+      s.buffer = b
+      s.loop = true
+
+      const bp = ctx.createBiquadFilter()
+      bp.type = 'bandpass'
+      bp.frequency.value = 2200
+      bp.Q.value = 0.7
+
+      const g = ctx.createGain()
+      g.gain.value = 0
+
+      s.connect(bp)
+      bp.connect(g)
+      g.connect(ctx.destination)
+      s.start()
+
+      audioCtxRef.current = ctx
+      noiseGainRef.current = g
+      bpFilterRef.current = bp
+    } catch {
+      audioCtxRef.current = null
+    }
+  }
+
+  const rip = (sp: number) => {
+    const ctx = audioCtxRef.current
+    const g = noiseGainRef.current
+    const bp = bpFilterRef.current
+    if (!ctx || !g || !bp) return
+    try {
+      const t = ctx.currentTime
+      const on = soundOnRef.current
+      g.gain.setTargetAtTime(
+        on ? Math.min(0.35, sp * 0.05) * (0.4 + Math.random() * 0.8) : 0,
+        t,
+        0.015
+      )
+      bp.frequency.setTargetAtTime(1800 + Math.random() * 1500, t, 0.02)
+    } catch {}
+  }
+
+  const thump = (v: number) => {
+    const ctx = audioCtxRef.current
+    if (!ctx || !soundOnRef.current) return
+    try {
+      const t = ctx.currentTime
+      const o = ctx.createOscillator()
+      const k = ctx.createGain()
+      o.frequency.setValueAtTime(150, t)
+      o.frequency.exponentialRampToValueAtTime(45, t + 0.15)
+      k.gain.setValueAtTime(Math.min(0.5, v / 25), t)
+      k.gain.exponentialRampToValueAtTime(0.001, t + 0.18)
+      o.connect(k)
+      k.connect(ctx.destination)
+      o.start(t)
+      o.stop(t + 0.2)
+    } catch {}
+  }
+
+  const gen = () => {
+    const d: number[] = []
+    let v = 3
+    for (let i = 0; i <= N; i++) {
+      v += (Math.random() - 0.5) * 3.6
+      v = Math.max(0.5, Math.min(7, v))
+      d.push(v)
+    }
+    dRef.current = d
+  }
+
+  const dAt = (y: number) => {
+    const d = dRef.current
+    if (!d.length) return 3
+    const idx = Math.min(N, Math.max(0, Math.round(y / ST)))
+    return d[idx] ?? 3
+  }
+
+  const P = (a: [number, number][]) =>
+    'polygon(' + a.map((p) => p[0].toFixed(1) + 'px ' + p[1].toFixed(1) + 'px').join(',') + ')'
+
+  const freeClip = () => {
+    const fri = friRef.current
+    if (!fri) return
+    const a: [number, number][] = []
+    for (let y = 0; y <= H; y += ST) a.push([dAt(y), y])
+    a.push([200, H], [200, 0])
+    fri.style.clipPath = P(a)
+  }
+
+  const chads = (x: number, y: number, n: number, p = 1) => {
+    for (let i = 0; i < n; i++) {
+      chRef.current.push({
+        x,
+        y,
+        vx: (Math.random() * 3 - 0.3) * p,
+        vy: -Math.random() * 3 * p,
+        r: Math.random() * 6,
+        vr: (Math.random() - 0.5) * 0.4,
+        s: 2 + Math.random() * 3,
+        l: 1,
+      })
+    }
+  }
+
+  const renderTear = () => {
+    const f = frontRef.current
+    const mn = mnRef.current
+    const fib = fibRef.current
+    const att = attRef.current
+    const fs = fsRef.current
+    const fw = fwRef.current
+    const perf = perfRef.current
+    const grab = grabRef.current
+
+    if (!mn || !fib || !att || !fs || !perf || !fw) return
+
+    const m: [number, number][] = [[0, 0]]
+    const fi: [number, number][] = [[0, 0]]
+    const fl: [number, number][] = []
+
+    for (let y = 0; y < f; y += ST) {
+      const j = dAt(y)
+      m.push([PX + j, y])
+      fi.push([PX + j + 2.5, y])
+      fl.push([j, y])
+    }
+    if (f > 0) {
+      const j = dAt(f)
+      m.push([PX + j, f])
+      fi.push([PX + j + 2.5, f])
+      fl.push([j, f])
+    }
+    m.push([PX, f], [PX, H], [0, H])
+    fi.push([PX, f], [PX, H], [0, H])
+    fl.push([200, f], [200, 0])
+
+    mn.style.clipPath = P(m)
+    fib.style.clipPath = P(fi)
+    fs.style.clipPath = P(fl)
+    att.style.clipPath = P([[0, f], [200, f], [200, H], [0, H]])
+
+    perf.style.top = `${f}px`
+    perf.style.height = `${Math.max(0, H - f)}px`
+
+    fw.style.display = f > 0 && !freeRef.current ? 'block' : 'none'
+    fw.style.transformOrigin = `${PX}px ${f}px`
+    fw.style.transform = `rotate(${angRef.current}deg)`
+    fw.style.filter = angRef.current > 7 ? 'drop-shadow(0 6px 8px rgba(0,0,0,.45))' : 'none'
+
+    if (grab) {
+      if (f > 0) {
+        grab.classList.add('used')
+      } else {
+        grab.classList.remove('used')
+      }
+    }
+  }
+
+  const detach = () => {
+    if (autoTimerRef.current) {
+      clearTimeout(autoTimerRef.current)
+      autoTimerRef.current = null
+    }
+    const held = stateRef.current === 'drag'
+    stateRef.current = 'free'
+    freeRef.current = {
+      x: PX + 100,
+      y: OY + 150,
+      vx: 3,
+      vy: -3,
+      rot: angRef.current * 0.6,
+      vr: (Math.random() - 0.5) * 5,
+      held: false,
+      lx: PX + 100,
+      ly: OY + 150,
+      ox: 0,
+      oy: 0,
+    }
+    isTornRef.current = true
+    setIsTorn(true)
+
+    if (grabRef.current) {
+      grabRef.current.style.opacity = '0'
+      grabRef.current.style.pointerEvents = 'none'
+      if (!held) {
+        grabRef.current.style.display = 'none'
+      }
+    }
+    if (attRef.current) attRef.current.style.display = 'none'
+    if (frRef.current) frRef.current.style.display = 'block'
+
+    chads(PX + 8, OY + H, 14, 1.6)
+    thump(16)
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25)
+
+    if (held && freeRef.current) {
+      freeRef.current.held = true
+      freeRef.current.ox = freeRef.current.x - psRef.current.x
+      freeRef.current.oy = freeRef.current.y - psRef.current.y
+      pointerHistoryRef.current = [{ x: psRef.current.x, y: psRef.current.y, t: performance.now() }]
+    }
+  }
+
+  const startEnd = (f: FreeState) => {
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion:reduce)').matches
+
+    f.end = prefersReducedMotion
+      ? 'fade'
+      : (['crumple', 'plane'] as const)[(Math.random() * 2) | 0]
+    f.k = 0
+    f.s = 1
+    f.vx = 0
+    f.vy = 0
+    f.rot = ((f.rot % 360) + 360) % 360
+  }
+
+  const triggerAutoDispense = () => {
+    if (autoDispenseTimerRef.current) {
+      clearTimeout(autoDispenseTimerRef.current)
+      autoDispenseTimerRef.current = null
+    }
+
+    if (msgRef.current) {
+      msgRef.current.textContent = 'Stub flew away! Dispensing new ticket in 2s...'
+    }
+
+    autoDispenseTimerRef.current = window.setTimeout(() => {
+      autoDispenseTimerRef.current = null
+      handleReset()
+      if (tRef.current) {
+        tRef.current.classList.remove('ticket-dispensed')
+        void tRef.current.offsetWidth
+        tRef.current.classList.add('ticket-dispensed')
+        window.setTimeout(() => {
+          tRef.current?.classList.remove('ticket-dispensed')
+        }, 500)
+      }
+    }, 2000)
+  }
+
+  const ending = (f: FreeState) => {
+    if (f.done) return
+    const fr = frRef.current
+    const fri = friRef.current
+    if (!fr || !fri) return
+    const e = f.end
+    if (e === 'fade') {
+      f.k = (f.k || 0) + 0.03
+      fr.style.opacity = `${Math.max(0, 1 - f.k)}`
+      if (f.k >= 1) {
+        fr.style.display = 'none'
+        if (!f.done) {
+          f.done = 1
+          triggerAutoDispense()
+        }
+      }
+      return
+    }
+    if ((f.k || 0) < 1) {
+      f.k = Math.min(1, (f.k || 0) + 0.035)
+      f.s = 1 - (e === 'crumple' ? 0.82 : 0.65) * f.k
+      if (f.k >= 0.4 && !f.shaped) {
+        f.shaped = 1
+        fri.style.clipPath =
+          e === 'crumple'
+            ? 'circle(100px at 100px 150px)'
+            : 'polygon(0% 15%,100% 50%,0% 85%,22% 50%)'
+      }
+      if (e === 'crumple') {
+        f.rot += Math.sin(f.k * 18) * 4
+        f.y += (SH - 100 * f.s - f.y) * 0.2
+      } else {
+        f.y -= f.k * 2
+        f.rot += (((-10 - f.rot + 540) % 360) - 180) * 0.12
+      }
+    } else if (e === 'crumple') {
+      f.vx = Math.min(9, f.vx + 0.25)
+      f.x += f.vx
+      f.rot += f.vx * 3.2
+      f.y = SH - 100 * (f.s ?? 1)
+    } else {
+      f.vx = Math.min(7, f.vx + 0.15)
+      f.vy -= 0.03
+      f.x += f.vx
+      f.y += f.vy
+      f.rot +=
+        (((Math.atan2(f.vy, f.vx) * 180 / Math.PI - f.rot + 540) % 360) - 180) *
+        0.12
+    }
+    if (f.x > W + 120 || f.x < -120 || f.y < -120) {
+      fr.style.display = 'none'
+      if (!f.done) {
+        f.done = 1
+        triggerAutoDispense()
+      }
+    }
+    fr.style.transform = `translate(${f.x - 100}px,${f.y - 150}px) rotate(${f.rot}deg) scale(${f.s ?? 1})`
+  }
+
+  const phys = () => {
+    const f = freeRef.current
+    const fr = frRef.current
+    if (!f || !fr) return
+
+    if (f.end) {
+      ending(f)
+      return
+    }
+
+    if (f.held) {
+      f.x = psRef.current.x + f.ox
+      f.y = psRef.current.y + f.oy
+      f.vx = (f.x - f.lx) * 0.6 + f.vx * 0.4
+      f.vy = (f.y - f.ly) * 0.6 + f.vy * 0.4
+    } else {
+      f.vy += 0.72
+      f.x += f.vx
+      f.y += f.vy
+      f.rot += f.vr
+      f.vx *= 0.992
+      const a = (f.rot * Math.PI) / 180
+      const c = Math.abs(Math.cos(a))
+      const s = Math.abs(Math.sin(a))
+      const hy = 100 * s + 150 * c
+      if (f.y + hy > SH) {
+        f.y = SH - hy
+        if (f.vy > 2) thump(f.vy)
+        f.vy *= -0.38
+        if (Math.abs(f.vy) < 1.2) f.vy = 0
+        f.vx *= 0.84
+        f.vr *= 0.6
+      }
+      if (f.y + hy >= SH - 0.5) {
+        const t = 90 + Math.round((f.rot - 90) / 180) * 180
+        f.vr += (t - f.rot) * 0.02
+        f.vr *= 0.9
+        f.vx *= 0.92
+      }
+    }
+    if (!f.held && f.y > SH - 140 && Math.abs(f.vx) < 0.4 && Math.abs(f.vr) < 0.4) {
+      f.rest = (f.rest || 0) + 1
+      if (f.rest > 50) startEnd(f)
+    } else {
+      f.rest = 0
+    }
+    f.lx = f.x
+    f.ly = f.y
+    fr.style.transform = `translate(${f.x - 100}px,${f.y - 150}px) rotate(${f.rot}deg)`
+  }
+
+  const handleReset = () => {
+    if (autoTimerRef.current) {
+      clearTimeout(autoTimerRef.current)
+      autoTimerRef.current = null
+    }
+    if (autoDispenseTimerRef.current) {
+      clearTimeout(autoDispenseTimerRef.current)
+      autoDispenseTimerRef.current = null
+    }
+    frontRef.current = 0
+    angRef.current = 5
+    angVRef.current = 0
+    angTRef.current = 5
+    stateRef.current = 'idle'
+    freeRef.current = null
+    chadYRef.current = 0
+    lastFRef.current = 0
+    chRef.current = []
+    lastPctRef.current = -1
+
+    gen()
+    freeClip()
+
+    if (grabRef.current) {
+      grabRef.current.style.display = 'block'
+      grabRef.current.style.opacity = '1'
+      grabRef.current.style.pointerEvents = 'auto'
+      grabRef.current.classList.remove('used')
+    }
+    if (attRef.current) attRef.current.style.display = 'block'
+    if (frRef.current) {
+      frRef.current.style.display = 'none'
+      frRef.current.style.opacity = '1'
+      frRef.current.style.transform = ''
+    }
+    if (noiseGainRef.current) {
+      try {
+        noiseGainRef.current.gain.value = 0
+      } catch {}
+    }
+    if (msgRef.current) msgRef.current.textContent = 'Tear 0%'
+
+    isTornRef.current = false
+    setIsTorn(false)
+    renderTear()
+  }
+
+  const handlePerfTear = () => {
+    if (stateRef.current === 'free' || isTornRef.current) return
+    initAudio()
+    stateRef.current = 'auto'
+    if (autoTimerRef.current) clearTimeout(autoTimerRef.current)
+    autoTimerRef.current = window.setTimeout(() => {
+      detach()
+    }, 550)
+  }
+
+  useEffect(() => {
+    handleReset()
+  }, [flight.flight.iata, flight.flight.number])
+
+  useEffect(() => {
+    gen()
+    freeClip()
+
+    const fit = () => {
+      const box = boxRef.current
+      const stage = stageRef.current
+      if (!box || !stage) return
+      // Desktop-first: cap scale cleanly at 1.0 to eliminate excess padding/stretching,
+      // while scaling down smoothly on tablets and mobile screens to prevent breakage or horizontal overflow.
+      const maxScale = 1.0
+      const S = Math.min(maxScale, (box.clientWidth - 16) / W)
+      sRef.current = S
+      stage.style.transform = `scale(${S})`
+      stage.style.transformOrigin = 'center top'
+      box.style.height = `${SH * S}px`
+    }
+
+    fit()
+    window.addEventListener('resize', fit)
+
+    const canvas = cvRef.current
+    if (canvas && typeof canvas.getContext === 'function' && import.meta.env.MODE !== 'test') {
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.scale(2, 2)
+        cxRef.current = ctx
+      }
+    }
+
+    runningRef.current = true
+
+    const loop = () => {
+      if (!runningRef.current) return
+
+      if (stateRef.current === 'auto') {
+        frontRef.current = Math.min(H, frontRef.current + 9)
+      }
+      const tgt = stateRef.current === 'drag' ? angTRef.current : 5 + (stateRef.current === 'auto' ? 20 : 0)
+      angVRef.current += (tgt - angRef.current) * 0.18
+      angVRef.current *= 0.7
+      angRef.current += angVRef.current
+
+      const sp = Math.abs(frontRef.current - lastFRef.current)
+      lastFRef.current = frontRef.current
+
+      while (frontRef.current - chadYRef.current >= 12 && chadYRef.current < H) {
+        chadYRef.current += 12
+        chads(PX + 8, OY + Math.min(chadYRef.current, H), 1 + ((Math.random() * 2) | 0))
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6)
+      }
+
+      if (frontRef.current >= H && !freeRef.current) {
+        detach()
+      }
+
+      rip(freeRef.current ? 0 : sp)
+      renderTear()
+      phys()
+
+      const cx = cxRef.current
+      if (cx) {
+        cx.clearRect(0, 0, W, SH)
+        chRef.current = chRef.current.filter((c) => c.l > 0)
+        for (const c of chRef.current) {
+          c.vy += 0.25
+          c.x += c.vx
+          c.y += c.vy
+          c.r += c.vr
+          c.l -= 0.012
+          cx.save()
+          cx.translate(c.x, c.y)
+          cx.rotate(c.r)
+          cx.globalAlpha = Math.max(0, c.l)
+          cx.fillStyle = '#cdd5e3'
+          cx.fillRect(-c.s / 2, -c.s / 3, c.s, c.s * 0.66)
+          cx.restore()
+        }
+      }
+
+      const pct = freeRef.current
+        ? freeRef.current.end
+          ? 102
+          : 101
+        : Math.round((frontRef.current / H) * 100)
+      if (pct !== lastPctRef.current) {
+        lastPctRef.current = pct
+        if (msgRef.current) {
+          msgRef.current.textContent = freeRef.current
+            ? freeRef.current.end
+              ? 'Stub flew away! Dispensing new ticket in 2s...'
+              : 'Stub is free. Pick it up and throw it.'
+            : `Tear ${pct}%`
+        }
+      }
+
+      rafIdRef.current = requestAnimationFrame(loop)
+    }
+
+    rafIdRef.current = requestAnimationFrame(loop)
+
+    const handleWindowPointerMove = (e: PointerEvent) => {
+      const stage = stageRef.current
+      if (!stage) return
+      const r = stage.getBoundingClientRect()
+      const S = sRef.current || 1
+      const x = (e.clientX - r.left) / S
+      const y = (e.clientY - r.top) / S
+      psRef.current = { x, y }
+      if (freeRef.current?.held) {
+        const now = performance.now()
+        pointerHistoryRef.current.push({ x, y, t: now })
+        if (pointerHistoryRef.current.length > 14) {
+          pointerHistoryRef.current.shift()
+        }
+      }
+    }
+
+    const releaseThrow = () => {
+      const f = freeRef.current
+      if (f && f.held) {
+        f.held = false
+        const now = performance.now()
+        const history = pointerHistoryRef.current
+        let vx = f.vx
+        let vy = f.vy
+
+        // Calculate authentic throw velocity from recent pointer samples (50-120ms window)
+        if (history.length >= 2) {
+          const recent = history.filter((p) => now - p.t < 120)
+          if (recent.length >= 2) {
+            const oldest = recent[0]
+            const newest = recent[recent.length - 1]
+            const dt = Math.max(10, newest.t - oldest.t)
+            const frameVx = ((newest.x - oldest.x) / dt) * 16.6
+            const frameVy = ((newest.y - oldest.y) / dt) * 16.6
+            if (Math.hypot(frameVx, frameVy) > Math.hypot(vx, vy)) {
+              vx = frameVx
+              vy = frameVy
+            }
+          }
+        }
+
+        const c = (v: number) => Math.max(-55, Math.min(55, v))
+        f.vx = c(vx)
+        f.vy = c(vy)
+        f.vr = f.vx * 0.35
+        pointerHistoryRef.current = []
+      }
+    }
+
+    releaseThrowRef.current = releaseThrow
+
+    const handleWindowPointerUp = () => {
+      releaseThrow()
+    }
+
+    window.addEventListener('pointermove', handleWindowPointerMove)
+    window.addEventListener('pointerup', handleWindowPointerUp)
+    window.addEventListener('pointercancel', handleWindowPointerUp)
+
+    return () => {
+      runningRef.current = false
+      cancelAnimationFrame(rafIdRef.current)
+      window.removeEventListener('resize', fit)
+      window.removeEventListener('pointermove', handleWindowPointerMove)
+      window.removeEventListener('pointerup', handleWindowPointerUp)
+      window.removeEventListener('pointercancel', handleWindowPointerUp)
+      if (autoTimerRef.current) clearTimeout(autoTimerRef.current)
+      if (autoDispenseTimerRef.current) clearTimeout(autoDispenseTimerRef.current)
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {})
+        audioCtxRef.current = null
+      }
+    }
+  }, [])
+
+  const handleGrabPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (freeRef.current) return
+    initAudio()
+    if (typeof e.currentTarget.setPointerCapture === 'function') {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {}
+    }
+    st0Ref.current = { x: e.clientX, y: e.clientY, f: frontRef.current }
+    stateRef.current = 'drag'
+    angTRef.current = 6
+  }
+
+  const handleGrabPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (stateRef.current !== 'drag' || freeRef.current || !st0Ref.current) return
+    const S = sRef.current || 1
+    const dy = (e.clientY - st0Ref.current.y) / S
+    const dx = (e.clientX - st0Ref.current.x) / S
+    frontRef.current = Math.max(frontRef.current, Math.min(H, st0Ref.current.f + dy))
+    angTRef.current = 6 + Math.min(Math.max(dx, 0), 220) * 0.2 + frontRef.current * 0.03
+    const stage = stageRef.current
+    if (stage) {
+      const r = stage.getBoundingClientRect()
+      const px = (e.clientX - r.left) / S
+      const py = (e.clientY - r.top) / S
+      psRef.current = { x: px, y: py }
+      const now = performance.now()
+      pointerHistoryRef.current.push({ x: px, y: py, t: now })
+      if (pointerHistoryRef.current.length > 14) {
+        pointerHistoryRef.current.shift()
+      }
+    }
+  }
+
+  const handleGrabPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (typeof e.currentTarget.releasePointerCapture === 'function') {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {}
+    }
+    if (stateRef.current === 'drag') {
+      stateRef.current = frontRef.current >= H * 0.7 ? 'auto' : 'idle'
+    }
+    if (freeRef.current?.held) {
+      releaseThrowRef.current()
+    }
+    if (grabRef.current && isTornRef.current) {
+      grabRef.current.style.display = 'none'
+    }
+  }
+
+  const handleFrPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!freeRef.current || freeRef.current.end) return
+    initAudio()
+    e.preventDefault()
+    if (typeof e.currentTarget.setPointerCapture === 'function') {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {}
+    }
+    const stage = stageRef.current
+    if (!stage) return
+    const r = stage.getBoundingClientRect()
+    const S = sRef.current || 1
+    const x = (e.clientX - r.left) / S
+    const y = (e.clientY - r.top) / S
+    psRef.current = { x, y }
+    const f = freeRef.current
+    f.held = true
+    f.ox = f.x - x
+    f.oy = f.y - y
+    f.vx = 0
+    f.vy = 0
+    f.vr = 0
+    f.rest = 0
+    pointerHistoryRef.current = [{ x, y, t: performance.now() }]
+  }
+
+  const handleFrPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (typeof e.currentTarget.releasePointerCapture === 'function') {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {}
+    }
+    releaseThrowRef.current()
+  }
+
   const departure = flight.route.departure
   const arrival = flight.route.arrival
-  const originName = departure.airport || departure.iata || 'Origin'
-  const destName = arrival.airport || arrival.iata || 'Destination'
+  const originCity = departure.airport
+    ? departure.airport.replace(/\s*(International|Airport|Airfield|Regional|Domestic).*/i, '').trim()
+    : departure.iata || 'ORIGIN'
+  const destCity = arrival.airport
+    ? arrival.airport.replace(/\s*(International|Airport|Airfield|Regional|Domestic).*/i, '').trim()
+    : arrival.iata || 'DESTINATION'
+  const flightCode = flight.flight.iata || flight.flight.number || '---'
+  const operatorName = flight.airline.name || 'Commercial Airline'
+  const ticketDate = formatTicketDate(flight.flight.date || flight.departure.scheduled)
+  const boardingTime = formatTicketTime(flight.departure.scheduled)
+  const arrivalDate = formatTicketDate(flight.arrival.scheduled || flight.flight.date)
+  const arrivalTime = formatTicketTime(flight.arrival.scheduled)
+  const gate = departure.gate || '---'
+  const terminal = departure.terminal ? `T${departure.terminal}` : '---'
+  const aircraftInfo = [flight.aircraft?.iata, flight.aircraft?.registration].filter(Boolean).join(' · ') || 'SCHEDULED'
+
+  const renderStub = (isDetached = false) => (
+    <div className="sp">
+      {isDetached && isTorn && <span className="sr-only">DETACHED STUB</span>}
+      <div className="r1">
+        <b>{departure.iata || originCity.slice(0, 3).toUpperCase()}</b>
+        <i>✈</i>
+        <b>{arrival.iata || destCity.slice(0, 3).toUpperCase()}</b>
+      </div>
+      <div className="gr">
+        <div>
+          <u>CARRIER</u>
+          <p>{operatorName}</p>
+        </div>
+        <div>
+          <u>DATE</u>
+          <p>{ticketDate}</p>
+        </div>
+        <div>
+          <u>FLIGHT</u>
+          <p>{flightCode}</p>
+        </div>
+        <div>
+          <u>BOARDING</u>
+          <p>{boardingTime}</p>
+        </div>
+        <div>
+          <u>GATE</u>
+          <p className="a">{gate}</p>
+        </div>
+        <div>
+          <u>TERMINAL</u>
+          <p>{terminal}</p>
+        </div>
+      </div>
+      <div className="bc"></div>
+      <em>*{flightCode}*</em>
+    </div>
+  )
 
   return (
     <section className="route-section geodesic-route-card" aria-labelledby="route-heading">
-      <div className="section-heading">
-        <div className="heading-with-caption">
-          <p className="section-kicker">THE ROUTE</p>
-          <h3 id="route-heading">Where you are headed</h3>
-          <p className="route-caption-text">
-            Direct corridor from {originName} to {destName}
-          </p>
+      <div className="section-heading route-section-heading">
+        <h3 id="route-heading" className="route-card-title">The Route</h3>
+      </div>
+
+      <div id="box" ref={boxRef} className="boarding-pass-box">
+        <div id="stage" ref={stageRef}>
+          <div className="t" id="t" ref={tRef} style={{ top: OY }}>
+            <div className="fib" id="fib" ref={fibRef} />
+            <div className="m" id="mn" ref={mnRef}>
+              <div className="st" />
+              <div className="bcv" />
+              <div className="lhr">{departure.iata || originCity.slice(0, 3).toUpperCase()}</div>
+              <div className="nm" style={{ left: 76, top: 106 }}>
+                {originCity.toUpperCase()}
+              </div>
+              <div className="dt" style={{ left: 76, top: 130 }}>
+                {ticketDate} <span>{boardingTime}</span>
+              </div>
+              <div className="rt">
+                <span />
+                <i style={{ fontStyle: 'normal' }}>✈</i>
+                <span />
+              </div>
+              <div className="gig">{arrival.iata || destCity.slice(0, 3).toUpperCase()}</div>
+              <div className="nm" style={{ right: 40, top: 106, textAlign: 'right' }}>
+                {destCity.toUpperCase()}
+              </div>
+              <div className="dt" style={{ right: 40, top: 130, textAlign: 'right' }}>
+                {arrivalDate} <span>{arrivalTime}</span>
+              </div>
+              <div className="f" style={{ left: 76, top: 164 }}>
+                <u>PASSENGER / CARRIER</u>
+                <p>{operatorName}</p>
+              </div>
+              <div className="f" style={{ left: 300, top: 164 }}>
+                <u>FLIGHT</u>
+                <p className="a">{flightCode}</p>
+              </div>
+              <div className="hr" />
+              <div className="f" style={{ left: 76, top: 216 }}>
+                <u>AIRCRAFT</u>
+                <p>{aircraftInfo}</p>
+              </div>
+              <div className="f" style={{ left: 216, top: 216 }}>
+                <u>GATE</u>
+                <p className="a big">{gate}</p>
+              </div>
+              <div className="f" style={{ left: 300, top: 216 }}>
+                <u>TERMINAL</u>
+                <p className="big">{terminal}</p>
+              </div>
+              <div className="ft">BOARDING CLOSES 15 MINUTES BEFORE SCHEDULED DEPARTURE</div>
+            </div>
+
+            <div id="perf" ref={perfRef}>
+              <button
+                type="button"
+                className="perf-accessible-btn"
+                onClick={isTorn ? handleReset : handlePerfTear}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    if (isTorn) {
+                      handleReset()
+                    } else {
+                      handlePerfTear()
+                    }
+                  }
+                }}
+                aria-label={isTorn ? 'Reattach ticket stub' : 'Tear ticket stub'}
+                aria-pressed={isTorn}
+              >
+                {isTorn ? 'REATTACH' : 'TEAR'}
+              </button>
+            </div>
+
+            <div className="s" id="att" ref={attRef}>
+              {renderStub(false)}
+            </div>
+
+            <div id="fw" ref={fwRef}>
+              <div className="s" id="fs" ref={fsRef}>
+                {renderStub(false)}
+              </div>
+            </div>
+
+            <div
+              className="g"
+              id="grab"
+              ref={grabRef}
+              onPointerDown={handleGrabPointerDown}
+              onPointerMove={handleGrabPointerMove}
+              onPointerUp={handleGrabPointerUp}
+              onPointerCancel={handleGrabPointerUp}
+            >
+              <span className="pill">grab &amp; pull down</span>
+            </div>
+
+            <i className="nt" style={{ top: -12 }} />
+            <i className="nt" style={{ top: 288 }} />
+          </div>
+
+          <div
+            id="fr"
+            ref={frRef}
+            onPointerDown={handleFrPointerDown}
+            onPointerUp={handleFrPointerUp}
+            onPointerCancel={handleFrPointerUp}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+          >
+            <div className="s" id="fri" ref={friRef}>
+              {renderStub(true)}
+            </div>
+          </div>
+
+          <canvas id="cv" ref={cvRef} width="1600" height="940" />
         </div>
       </div>
 
-      <div className="geodesic-display">
-        {/* Curved Geodesic Route Canvas */}
-        <div className="route-canvas-wrapper" aria-hidden="true">
-          <svg className="route-arc-svg" viewBox="0 0 800 120" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="routeGradientArc" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#d2fc38" stopOpacity="0.9" />
-                <stop offset="50%" stopColor="#38bdf8" stopOpacity="1" />
-                <stop offset="100%" stopColor="#d2fc38" stopOpacity="0.9" />
-              </linearGradient>
-            </defs>
-            {/* Navigational corridor background line */}
-            <path
-              d="M 50 90 Q 400 15 750 90"
-              className="route-path-background"
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.1)"
-              strokeWidth="2"
-              strokeDasharray="6 6"
-            />
-            {/* Active trajectory arc */}
-            <path
-              d="M 50 90 Q 400 15 750 90"
-              className="route-path-active animate-route-path"
-              fill="none"
-              stroke="url(#routeGradientArc)"
-              strokeWidth="3.5"
-            />
-            {/* Departure Anchor */}
-            <g className="anchor-origin animate-anchor-origin">
-              <circle cx="50" cy="90" r="8" fill="#d4fc34" opacity="0.25" />
-              <circle cx="50" cy="90" r="4" fill="#d4fc34" />
-            </g>
-            {/* Directional Airplane Marker at Apex (Illustrative) */}
-            <g className="apex-aircraft-marker animate-aircraft-marker" transform="translate(400, 48)">
-              <circle cx="0" cy="0" r="15" fill="#101522" stroke="rgba(255, 255, 255, 0.25)" strokeWidth="1.5" />
-              <path
-                d="M -5 -2 L 0 -7 L 5 -2 L 1 -2 L 1 5 L 3 7 L 3 8 L 0 7 L -3 8 L -3 7 L -1 5 L -1 -2 Z"
-                fill="#38bdf8"
-                transform="rotate(90)"
-              />
-            </g>
-            {/* Arrival Anchor */}
-            <g className="anchor-dest animate-anchor-dest">
-              <circle cx="750" cy="90" r="8" fill="#38bdf8" opacity="0.25" />
-              <circle cx="750" cy="90" r="4" fill="#38bdf8" />
-            </g>
-          </svg>
-        </div>
-
-        <div className="route-terminals-grid">
-          {/* Departure Terminal Block */}
-          <div className="terminal-block departure-block">
-            <span className="terminal-role">ORIGIN</span>
-            <span className="airport-code">{departure.iata || '---'}</span>
-            <span className="airport-name">{departure.airport || 'Departure airport unavailable'}</span>
-            <span className="airport-detail">
-              {[
-                departure.icao && `ICAO ${departure.icao}`,
-                departure.terminal && `Terminal ${departure.terminal}`,
-                departure.gate && `Gate ${departure.gate}`,
-              ].filter(Boolean).join(' · ') || 'Departure details unavailable'}
-            </span>
-          </div>
-
-          {/* Central Route Corridor Tag */}
-          <div className="route-connector" aria-label="Flight route">
-            <span className="route-duration">GREAT-CIRCLE CORRIDOR</span>
-            <span className="route-corridor-spec">FLIGHT TRAJECTORY</span>
-            <span className="route-sub-note">Illustrative route · Not live radar telemetry</span>
-          </div>
-
-          {/* Arrival Terminal Block */}
-          <div className="terminal-block arrival-block">
-            <span className="terminal-role">DESTINATION</span>
-            <span className="airport-code">{arrival.iata || '---'}</span>
-            <span className="airport-name">{arrival.airport || 'Arrival airport unavailable'}</span>
-            <span className="airport-detail">
-              {[
-                arrival.icao && `ICAO ${arrival.icao}`,
-                arrival.terminal && `Terminal ${arrival.terminal}`,
-                arrival.gate && `Gate ${arrival.gate}`,
-              ].filter(Boolean).join(' · ') || 'Arrival details unavailable'}
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Visually hidden screen-reader announcement for auto-dispense countdown & tests */}
+      <span id="msg" ref={msgRef} className="sr-only" aria-live="polite">
+        Tear 0%
+      </span>
     </section>
   )
 }
