@@ -12,12 +12,12 @@
   --bg-subtle: rgba(255, 255, 255, 0.04);
   --bg-glass: rgba(16, 21, 34, 0.88);
 
-  /* Technical Hairlines & Machined Borders */
-  --border-subtle: rgba(255, 255, 255, 0.10);
-  --border-medium: rgba(255, 255, 255, 0.16);
-  --border-bright: rgba(255, 255, 255, 0.26);
-  --border-highlight: rgba(212, 252, 52, 0.35);
-  --border-active: #d4fc34;
+  /* Technical Hairlines & Machined Borders (Flat Noir - No Harsh Highlights) */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-bright: rgba(255, 255, 255, 0.16);
+  --border-highlight: rgba(255, 255, 255, 0.14);
+  --border-active: rgba(255, 255, 255, 0.20);
 
   /* Editorial Typography & WCAG-compliant Contrast */
   --text-primary: #f8fafc;
@@ -25,13 +25,13 @@
   --text-muted: #94a3b8;
   --text-dim: #64748b;
 
-  /* Aviation Signals & Accents (Calibrated Luminance) */
-  --signal-lime: #d4fc34;
-  --signal-lime-hover: #e0fd63;
-  --signal-lime-glow: rgba(212, 252, 52, 0.22);
-  --signal-cyan: #38bdf8;
-  --signal-cyan-hover: #60a5fa;
-  --signal-cyan-glow: rgba(56, 189, 248, 0.22);
+  /* Aviation Signals & Accents (Studio White / Titanium - calm & non-sharp) */
+  --signal-lime: #f1f5f9;
+  --signal-lime-hover: #ffffff;
+  --signal-lime-glow: transparent;
+  --signal-cyan: #93c5fd;
+  --signal-cyan-hover: #bfdbfe;
+  --signal-cyan-glow: transparent;
 
   /* Flight Status Semantics (Solid tint + high contrast) */
   --status-ontime: #4ade80;
@@ -63,11 +63,11 @@
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', "Cascadia Code", "SF Mono", Consolas, monospace;
 
-  /* Shadows & Inset Rim Illumination */
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 6px 20px -2px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  --shadow-lg: 0 16px 40px -4px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  --shadow-glow: 0 0 24px var(--signal-lime-glow);
+  /* Shadows & Inset Rim Illumination (Removed for Clean Flat Editorial Look) */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
 
   /* Default Font & Engine */
   font-family: var(--font-sans);

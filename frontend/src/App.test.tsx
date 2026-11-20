@@ -81,6 +81,23 @@ describe('Flight Detective app', () => {
     expect(screen.getByRole('heading', { name: 'Start with a flight number' })).toBeInTheDocument()
   })
 
+  it('renders the GitHub and LinkedIn links with free-to-use vector icons', () => {
+    render(<App />)
+
+    const githubNavLinks = screen.getAllByRole('link', { name: /github repository/i })
+    expect(githubNavLinks.length).toBeGreaterThanOrEqual(1)
+    const [githubBtn] = githubNavLinks
+    expect(githubBtn).toHaveAttribute('href', 'https://github.com/Yuktha01/flight-detective')
+    expect(githubBtn.querySelector('svg.github-icon')).toBeInTheDocument()
+    expect(githubBtn).not.toHaveTextContent(/^GH$/)
+
+    const linkedinLinks = screen.getAllByRole('link', { name: /linkedin profile/i })
+    expect(linkedinLinks.length).toBeGreaterThanOrEqual(1)
+    const [linkedinBtn] = linkedinLinks
+    expect(linkedinBtn).toHaveAttribute('href', 'https://www.linkedin.com/in/yuktha-kb/')
+    expect(linkedinBtn.querySelector('svg.linkedin-icon')).toBeInTheDocument()
+  })
+
   it('shows loading while a valid flight request is pending', async () => {
     let resolveFlight!: (flight: FlightResponse) => void
     mockedGetFlight.mockReturnValue(new Promise((resolve) => {
@@ -89,12 +106,12 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), ' su1531 ')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), ' su1531 ')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(screen.getByRole('status')).toHaveTextContent('CHECKING SU1531')
     expect(mockedGetFlight).toHaveBeenCalledWith('SU1531')
-    expect(screen.getByRole('textbox', { name: 'Flight number' })).toBeDisabled()
+    expect(screen.getByRole('textbox', { name: /flight number/i })).toBeDisabled()
 
     await act(async () => {
       resolveFlight(flightResponse)
@@ -106,7 +123,7 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'w24979')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'w24979')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(mockedGetFlight).toHaveBeenCalledWith('W24979')
@@ -118,7 +135,7 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'gec8387')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'gec8387')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(mockedGetFlight).toHaveBeenCalledWith('GEC8387')
@@ -129,13 +146,13 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'su1531')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'su1531')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
-    expect(screen.getByText('Aeroflot')).toBeInTheDocument()
-    expect(screen.getByText('SVO')).toBeInTheDocument()
-    expect(screen.getByText('LED')).toBeInTheDocument()
+    expect(screen.getAllByText('Aeroflot')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('SVO')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('LED')[0]).toBeInTheDocument()
     expect(screen.getByText('This flight is delayed by 15 minutes.')).toBeInTheDocument()
     expect(screen.getByText('RA-12345')).toBeInTheDocument()
     expect(screen.getByText('Ground speed')).toBeInTheDocument()
@@ -153,7 +170,7 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'su1531')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'su1531')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
@@ -169,7 +186,7 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'su1531')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'su1531')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
@@ -181,7 +198,7 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'AI302')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'AI302')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(await screen.findByRole('heading', { name: 'We could not locate that flight' })).toBeInTheDocument()
@@ -193,11 +210,11 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'AI302')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'AI302')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(await screen.findByText('Please enter a valid flight number.')).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Flight number' })).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('textbox', { name: /flight number/i })).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('shows the unavailable state for other API failures', async () => {
@@ -205,7 +222,7 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'AI302')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'AI302')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(await screen.findByRole('heading', { name: 'We hit a delay on our end' })).toBeInTheDocument()
@@ -236,7 +253,7 @@ describe('Flight Detective app', () => {
 
     expect(mockedGetDiscoveredFlights).toHaveBeenCalledTimes(1)
     expect(mockedGetFlight).toHaveBeenCalledWith('SU1531')
-    expect(screen.getByRole('textbox', { name: 'Flight number' })).toHaveValue('SU1531')
+    expect(screen.getByRole('textbox', { name: /flight number/i })).toHaveValue('SU1531')
     expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
   })
 
@@ -269,6 +286,20 @@ describe('Flight Detective app', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Flight data service is temporarily unavailable.')
   })
 
+  it('renders the integrated ghost corridor hint and triggers investigation on suggestion click', async () => {
+    mockedGetFlight.mockResolvedValue(flightResponse)
+    const user = userEvent.setup()
+    render(<App />)
+
+    const routeButton = screen.getByRole('button', { name: 'BA249' })
+    expect(routeButton).toBeInTheDocument()
+
+    await user.click(routeButton)
+
+    expect(mockedGetFlight).toHaveBeenCalledWith('BA249')
+    expect(screen.getByRole('textbox', { name: /flight number/i })).toHaveValue('BA249')
+  })
+
   it('investigates a flight when clicking a quick route chip', async () => {
     mockedGetFlight.mockResolvedValue(flightResponse)
     const user = userEvent.setup()
@@ -277,7 +308,7 @@ describe('Flight Detective app', () => {
     await user.click(screen.getByRole('button', { name: 'BA249' }))
 
     expect(mockedGetFlight).toHaveBeenCalledWith('BA249')
-    expect(screen.getByRole('textbox', { name: 'Flight number' })).toHaveValue('BA249')
+    expect(screen.getByRole('textbox', { name: /flight number/i })).toHaveValue('BA249')
   })
 
   it('refreshes flight data with cache bypass when clicking the refresh button', async () => {
@@ -285,7 +316,7 @@ describe('Flight Detective app', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByRole('textbox', { name: 'Flight number' }), 'su1531')
+    await user.type(screen.getByRole('textbox', { name: /flight number/i }), 'su1531')
     await user.click(screen.getByRole('button', { name: /investigate/i }))
 
     expect(await screen.findByRole('heading', { name: 'SU1531' })).toBeInTheDocument()
@@ -297,4 +328,4 @@ describe('Flight Detective app', () => {
     expect(mockedGetFlight).toHaveBeenCalledTimes(2)
     expect(mockedGetFlight).toHaveBeenLastCalledWith('SU1531', true)
   })
-})
+})
