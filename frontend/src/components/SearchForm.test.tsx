@@ -36,7 +36,7 @@ describe('SearchForm', () => {
   it('renders a labeled flight number input and Investigate button', () => {
     renderSearchForm()
 
-    expect(screen.getByRole('textbox', { name: 'Flight number' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /enter flight number/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /investigate/i })).toBeInTheDocument()
   })
 
@@ -44,7 +44,7 @@ describe('SearchForm', () => {
     const user = userEvent.setup()
     render(<ControlledSearchForm />)
 
-    const input = screen.getByRole('textbox', { name: 'Flight number' })
+    const input = screen.getByRole('textbox', { name: /enter flight number/i })
     await user.type(input, 'AI302')
 
     expect(input).toHaveValue('AI302')
@@ -62,7 +62,7 @@ describe('SearchForm', () => {
   it('disables the input and button while loading', () => {
     renderSearchForm({ loading: true })
 
-    expect(screen.getByRole('textbox', { name: 'Flight number' })).toBeDisabled()
+    expect(screen.getByRole('textbox', { name: /enter flight number/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /searching/i })).toBeDisabled()
   })
 
@@ -70,7 +70,7 @@ describe('SearchForm', () => {
     renderSearchForm({ error: 'Enter a valid flight number.' })
 
     expect(screen.getByText('Enter a valid flight number.')).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Flight number' })).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('textbox', { name: /enter flight number/i })).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('renders and invokes the Surprise Me button when onSurpriseMe is provided', async () => {
@@ -88,8 +88,37 @@ describe('SearchForm', () => {
   it('disables controls and shows picking state when surpriseLoading is true', () => {
     renderSearchForm({ onSurpriseMe: vi.fn(), surpriseLoading: true })
 
-    expect(screen.getByRole('textbox', { name: 'Flight number' })).toBeDisabled()
+    expect(screen.getByRole('textbox', { name: /enter flight number/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /investigate/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /picking/i })).toBeDisabled()
+  })
+
+  it('renders the ghost corridor suggestion and auto-fills on keycap button click', async () => {
+    const user = userEvent.setup()
+    const onValueChange = vi.fn()
+    const onSubmit = vi.fn()
+    renderSearchForm({ onValueChange, onSubmit })
+
+    const ghostButton = screen.getByRole('button', { name: 'BA249' })
+    expect(ghostButton).toBeInTheDocument()
+
+    await user.click(ghostButton)
+
+    expect(onValueChange).toHaveBeenCalledWith('BA249')
+    expect(onSubmit).toHaveBeenCalledWith('BA249')
+  })
+
+  it('auto-fills the ghost suggestion when pressing Tab on an empty input', async () => {
+    const user = userEvent.setup()
+    const onValueChange = vi.fn()
+    const onSubmit = vi.fn()
+    renderSearchForm({ onValueChange, onSubmit })
+
+    const input = screen.getByRole('textbox', { name: /enter flight number/i })
+    await user.click(input)
+    await user.keyboard('{Tab}')
+
+    expect(onValueChange).toHaveBeenCalledWith('BA249')
+    expect(onSubmit).toHaveBeenCalledWith('BA249')
   })
 })
