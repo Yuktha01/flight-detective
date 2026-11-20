@@ -16,9 +16,9 @@ flight-detective/
 │   │   ├── routes/
 │   │   ├── services/
 │   │   ├── types/
+│   │   ├── utils/
 │   │   ├── app.ts
 │   │   ├── config.ts
-│   │   ├── index.ts
 │   │   ├── lambda.ts
 │   │   └── server.ts
 │   └── Dockerfile
