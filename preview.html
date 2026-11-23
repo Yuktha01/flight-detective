@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flight Detective — Editorial Noir Corridor Designs</title>
+<style>
+/* ==========================================================================
+   Flight Detective — Editorial Noir Design System Tokens (Matched to Local UI)
+   ========================================================================== */
+:root {
+  --bg-base: #07090e;
+  --bg-canvas: #0b0e17;
+  --bg-card: #101522;
+  --bg-card-elevated: #161c2d;
+  --bg-card-hover: #1c2438;
+  --bg-subtle: rgba(255, 255, 255, 0.04);
+  --bg-glass: rgba(16, 21, 34, 0.88);
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-bright: rgba(255, 255, 255, 0.16);
+  --border-highlight: rgba(255, 255, 255, 0.14);
+  --border-active: rgba(255, 255, 255, 0.20);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --signal-lime: #f1f5f9;       /* Studio White / Titanium */
+  --signal-lime-hover: #ffffff;
+  --signal-lime-glow: transparent;
+  --signal-cyan: #93c5fd;       /* Subtle Ice Blue */
+  --signal-cyan-hover: #bfdbfe;
+  --signal-cyan-glow: transparent;
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', "Cascadia Code", "SF Mono", Consolas, monospace;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: 0;
+  min-height: 100vh;
+}
+.mono, input, button, .tag, .code-pill, .badge {
+  font-family: var(--font-mono);
+}
+
+/* Masthead Header */
+.masthead-preview {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(7, 9, 14, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.masthead-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  background: var(--signal-lime);
+  color: #07090e;
+  border-radius: 5px;
+  font-weight: 900;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.brand-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  border-left: 1px solid var(--border-medium);
+  padding-left: 10px;
+}
+
+.masthead-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mode-toggle-group {
+  display: inline-flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+.mode-btn.active {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+}
+
+/* Page Layout */
+.page-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+.intro-section {
+  margin-bottom: 28px;
+}
+.intro-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.intro-desc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 720px;
+}
+
+/* Contender Selection Tabs */
+.picks-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+@media (max-width: 720px) {
+  .picks-nav {
+    grid-template-columns: 1fr;
+  }
+}
+.pick-tab-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.pick-tab-card:hover {
+  background: var(--bg-card-elevated);
+  border-color: var(--border-medium);
+}
+.pick-tab-card.active {
+  background: #121826;
+  border-color: var(--border-bright);
+}
+.pick-tab-card.active::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--signal-lime);
+  border-radius: 2px;
+}
+.pick-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--signal-cyan);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+.pick-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.pick-summary {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Simulation Canvas */
+.simulation-shell {
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  margin: 0 auto;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.simulation-shell.desktop-mode {
+  width: 100%;
+}
+.simulation-shell.mobile-mode {
+  max-width: 390px;
+  border-radius: 36px;
+  border: 2px solid var(--border-bright);
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85);
+}
+.mobile-device-bezel {
+  display: none;
+  height: 24px;
+  background: #04060a;
+  border-bottom: 1px solid var(--border-subtle);
+  align-items: center;
+  justify-content: center;
+}
+.simulation-shell.mobile-mode .mobile-device-bezel {
+  display: flex;
+}
+.mobile-speaker {
+  width: 44px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+}
+
+/* Search Hero Stage */
+.sim-hero {
+  padding: 24px 22px 28px;
+  position: relative;
+}
+.sim-meta-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.sim-meta-label svg {
+  color: var(--signal-lime);
+}
+
+/* Search Form (Matches SearchForm.tsx) */
+.search-form-sim {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.search-bar-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.input-wrap-sim {
+  flex: 1 1 240px;
+  min-width: 0;
+  height: 52px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.18s ease;
+}
+.input-wrap-sim:focus-within {
+  border-color: var(--border-bright);
+  background: #0d121c;
+}
+.input-search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.input-wrap-sim input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.input-wrap-sim input:focus {
+  outline: none;
+}
+.input-wrap-sim input::placeholder {
+  color: var(--text-dim);
+  text-transform: none;
+  font-weight: 400;
+  font-size: 13.5px;
+  letter-spacing: normal;
+}
+.input-keycap-hint {
+  border: 1px solid var(--border-medium);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.input-keycap-hint:hover {
+  color: var(--text-primary);
+  border-color: var(--border-bright);
+}
+
+.actions-row-sim {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.simulation-shell.mobile-mode .actions-row-sim {
+  width: 100%;
+}
+.btn-investigate-sim {
+  height: 52px;
+  padding: 0 22px;
+  background: var(--signal-lime);
+  color: #07090e;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+.btn-investigate-sim:hover {
+  background: var(--signal-lime-hover);
+}
+.simulation-shell.mobile-mode .btn-investigate-sim {
+  flex: 1;
+}
+.btn-surprise-sim {
+  height: 52px;
+  padding: 0 16px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.btn-surprise-sim:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-bright);
+}
+
+.sim-output-note {
+  font-size: 12px;
+  color: var(--signal-cyan);
+  min-height: 18px;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   OPTION 1: THE EDITORIAL RUNWAY PILLS (Subtle & Practical)
+   ========================================================================== */
+.option-1-wrap {
+  margin-top: 10px;
+}
+.runway-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+.runway-scroll-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.runway-scroll-track::-webkit-scrollbar {
+  height: 2px;
+}
+.runway-scroll-track::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 99px;
+}
+
+.corridor-pill-btn {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.16s ease;
+  user-select: none;
+}
+.corridor-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--border-bright);
+}
+.corridor-pill-btn:active {
+  transform: scale(0.97);
+}
+.pill-code {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+.pill-route {
+  font-size: 12px;
+  color: var(--signal-cyan);
+  font-weight: 600;
+}
+.pill-city {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.pill-type-tag {
+  font-size: 9.5px;
+  color: var(--text-dim);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   OPTION 2: THE QUIET COPILOT INLINE HINT (Zero Extra Vertical Space)
+   ========================================================================== */
+.option-2-wrap {
+  margin-top: 8px;
+}
+.copilot-inline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 4px;
+}
+.copilot-cycle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.copilot-bullet {
+  color: var(--signal-cyan);
+  font-size: 10px;
+}
+.copilot-label-lead {
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.copilot-active-text {
+  color: var(--text-primary);
+  font-weight: 600;
+  transition: opacity 0.35s ease;
+  cursor: pointer;
+}
+.copilot-active-text:hover {
+  color: var(--signal-cyan);
+  text-decoration: underline;
+}
+.copilot-mobile-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.copilot-mobile-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   OPTION 3: THE TECHNICAL HAIRLINE TRAY (Flat Machined Accordion)
+   ========================================================================== */
+.option-3-wrap {
+  margin-top: 10px;
+}
+.hairline-tray-header {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.16s ease;
+  user-select: none;
+}
+.hairline-tray-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-medium);
+}
+.tray-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+.tray-count-tag {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.tray-chevron {
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: transform 0.2s ease;
+}
+
+.hairline-tray-drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.hairline-tray-drawer.open {
+  grid-template-rows: 1fr;
+}
+.tray-drawer-inner {
+  overflow: hidden;
+  padding-top: 6px;
+}
+.machined-data-table {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.table-data-row {
+  display: grid;
+  grid-template-columns: 84px 100px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 14px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+.table-data-row:first-child {
+  border-top: none;
+}
+.table-data-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.table-data-row:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+.td-code {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.td-route {
+  color: var(--signal-cyan);
+  font-weight: 600;
+}
+.td-cities {
+  color: var(--text-muted);
+}
+.td-badge {
+  font-size: 9.5px;
+  color: var(--text-dim);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+@media (max-width: 600px) {
+  .table-data-row {
+    grid-template-columns: 75px 85px 1fr;
+  }
+  .td-badge { display: none; }
+}
+
+/* Detail Evaluation Card */
+.evaluation-breakdown {
+  margin-top: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.eval-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+@media (max-width: 720px) {
+  .eval-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.eval-col h4 {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.eval-col p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* Reference Archive Accordion */
+.archive-accordion {
+  margin-top: 40px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 24px;
+}
+.archive-toggle-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px 18px;
+  width: 100%;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.archive-toggle-bar:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+.archive-content {
+  display: none;
+  margin-top: 20px;
+}
+.archive-content.open {
+  display: block;
+}
+</style>
+</head>
+<body>
+
+<header class="masthead-preview">
+  <div class="masthead-left">
+    <div class="brand-mark">FD</div>
+    <span class="brand-name">Flight Detective</span>
+    <span class="brand-sub">Corridor Design System · Editorial Noir</span>
+  </div>
+
+  <div class="masthead-right">
+    <div class="mode-toggle-group">
+      <button class="mode-btn active" id="btn-desktop" onclick="setDeviceMode('desktop')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Desktop (Full)
+      </button>
+      <button class="mode-btn" id="btn-mobile" onclick="setDeviceMode('mobile')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        Mobile (390px iPhone)
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="page-container">
+
+  <section class="intro-section">
+    <h1 class="intro-title">Top 3 Subtle &amp; Practical Picks</h1>
+    <p class="intro-desc">
+      Calibrated to the <b>Editorial Noir</b> design system (deep charcoal, studio white/titanium hairlines, and calm ice blue). Zero radioactive glow, zero retro-gimmick loops, and zero vertical screen clutter on mobile.
+    </p>
+  </section>
+
+  <!-- Pick Switcher Tabs -->
+  <div class="picks-nav">
+    <div class="pick-tab-card active" id="tab-opt-1" onclick="selectOption(1)">
+      <div class="pick-badge"><span>PICK #1 · RECOMMENDED</span><span>34px Height</span></div>
+      <div class="pick-title">Runway Hairline Pills</div>
+      <div class="pick-summary">Single horizontal rail. Native mobile swipe momentum. Zero vertical layout push.</div>
+    </div>
+
+    <div class="pick-tab-card" id="tab-opt-2" onclick="selectOption(2)">
+      <div class="pick-badge"><span>PICK #2 · MINIMALIST</span><span>0px Extra Height</span></div>
+      <div class="pick-title">Quiet Copilot Hint</div>
+      <div class="pick-summary">Gentle 5s fade suggestion in input. Instant Tab-autofill on desktop, 1-tap chip on mobile.</div>
+    </div>
+
+    <div class="pick-tab-card" id="tab-opt-3" onclick="selectOption(3)">
+      <div class="pick-badge"><span>PICK #3 · STRUCTURED</span><span>32px Collapsed</span></div>
+      <div class="pick-title">Technical Hairline Tray</div>
+      <div class="pick-summary">Clean 1-line drawer. Unrolls a calm, flat 4-row technical data table on demand.</div>
+    </div>
+  </div>
+
+  <!-- Interactive Simulation Canvas -->
+  <div class="simulation-shell desktop-mode" id="sim-shell">
+    <div class="mobile-device-bezel">
+      <div class="mobile-speaker"></div>
+    </div>
+
+    <div class="sim-hero">
+      <div class="sim-meta-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+        <span>Flight number</span>
+      </div>
+
+      <!-- Real Search Bar Simulation -->
+      <div class="search-form-sim">
+        <div class="search-bar-row">
+          <div class="input-wrap-sim">
+            <svg class="input-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input id="flight-input" type="text" placeholder="Search flight number (e.g. BA249, AI302, DL402)" autocomplete="off">
+            <span class="input-keycap-hint" id="tab-keycap" style="display:none;" onclick="triggerKeycapAccept()">Tab ↹</span>
+          </div>
+
+          <div class="actions-row-sim">
+            <button class="btn-investigate-sim" id="btn-run-search">
+              Investigate <span style="font-weight:400;margin-left:2px;">→</span>
+            </button>
+            <button class="btn-surprise-sim" id="btn-surprise" title="Select live flight">
+              Surprise Me
+            </button>
+          </div>
+        </div>
+
+        <div class="sim-output-note" id="sim-status">
+          Select any corridor below to test instant investigation.
+        </div>
+
+        <!-- ==========================================
+             CONTENDER 1: RUNWAY HAIRLINE PILLS
+             ========================================== -->
+        <div class="option-1-wrap" id="view-opt-1">
+          <div class="runway-subhead">
+            <span>POPULAR CORRIDORS</span>
+            <span style="font-size:10px;color:var(--text-dim);font-weight:500;">SWIPE OR CLICK</span>
+          </div>
+          <div class="runway-scroll-track" id="pills-track">
+            <!-- Injected by script -->
+          </div>
+        </div>
+
+        <!-- ==========================================
+             CONTENDER 2: QUIET COPILOT INLINE HINT
+             ========================================== -->
+        <div class="option-2-wrap" id="view-opt-2" style="display:none;">
+          <div class="copilot-inline-bar">
+            <div class="copilot-cycle-wrap">
+              <span class="copilot-bullet">✦</span>
+              <span class="copilot-label-lead">Suggestion:</span>
+              <span class="copilot-active-text" id="copilot-text" onclick="acceptCopilotFlight()">
+                SU1531 · Tomsk to Moscow (TOF → SVO)
+              </span>
+            </div>
+            <button class="copilot-mobile-btn" onclick="acceptCopilotFlight()">
+              Use Suggestion
+            </button>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             CONTENDER 3: TECHNICAL HAIRLINE TRAY
+             ========================================== -->
+        <div class="option-3-wrap" id="view-opt-3" style="display:none;">
+          <div class="hairline-tray-header" onclick="toggleHairlineTray()">
+            <div class="tray-header-left">
+              <span>✦</span>
+              <span>FEATURED AIRSPACE CORRIDORS</span>
+              <span class="tray-count-tag">4 ROUTES</span>
+            </div>
+            <span class="tray-chevron" id="tray-chevron-icon">▾</span>
+          </div>
+
+          <div class="hairline-tray-drawer" id="hairline-drawer">
+            <div class="tray-drawer-inner">
+              <div class="machined-data-table" id="tray-table">
+                <!-- Injected by script -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Design & Technical Evaluation -->
+  <div class="evaluation-breakdown">
+    <h3 style="font-size:14px;color:var(--text-primary);margin-bottom:4px;">Why These 3 Picks Are Clean &amp; Practical</h3>
+    <div class="eval-grid">
+      <div class="eval-col">
+        <h4>1. Mobile Space Economy</h4>
+        <p>Instead of 4 vertical cards consuming over 400px of height, these options consume either <b>0px</b> (Copilot) or <b>~34px</b> (Runway Pill Rail). Flight briefing results remain immediately visible.</p>
+      </div>
+      <div class="eval-col">
+        <h4>2. Subtle Motion Physics</h4>
+        <p>No tumbling letter scrambles or artificial countdown timers. Motion is restricted to smooth opacity cross-fades (0.35s), native touch inertia, and a 0.26s cubic-bezier tray transition.</p>
+      </div>
+      <div class="eval-col">
+        <h4>3. Editorial Noir Palette</h4>
+        <p>Uses calm studio white titanium hairlines (<code>rgba(255,255,255,0.08)</code>), flat noir cards (<code>#101522</code>), and cool ice blue (<code>#93c5fd</code>). Zero harsh green glows.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reference Archive (Raw 12 Prototypes from Original File) -->
+  <div class="archive-accordion">
+    <button class="archive-toggle-bar" onclick="toggleArchive()">
+      <span>Reference: View Original 12 Prototype Demos (Archive)</span>
+      <span id="archive-arrow">▸</span>
+    </button>
+    <div class="archive-content" id="archive-box">
+      <p style="font-size:12px;color:var(--text-muted);margin:12px 0 16px;">
+        Direct standalone files: <a href="airport-style.html" target="_blank" style="color:var(--signal-cyan);margin-right:12px;">airport-style.html ↗</a> <a href="corridor-prototypes.html" target="_blank" style="color:var(--signal-cyan);">corridor-prototypes.html ↗</a>
+      </p>
+      <iframe src="airport-style.html" style="width:100%;height:450px;border:1px solid var(--border-subtle);border-radius:10px;margin-bottom:12px;"></iframe>
+      <iframe src="corridor-prototypes.html" style="width:100%;height:450px;border:1px solid var(--border-subtle);border-radius:10px;"></iframe>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const CORRIDORS = [
+  { code: "SU1531", from: "TOF", to: "SVO", fromCity: "Tomsk", toCity: "Moscow", network: "Eurasian Corridor", badge: "Continental" },
+  { code: "AI302", from: "DEL", to: "SYD", fromCity: "Delhi", toCity: "Sydney", network: "Indo-Pacific Corridor", badge: "Long-Haul" },
+  { code: "BA249", from: "LHR", to: "GIG", fromCity: "London", toCity: "Rio", network: "Atlantic Corridor", badge: "Transatlantic" },
+  { code: "W24979", from: "CPH", to: "BLL", fromCity: "Copenhagen", toCity: "Billund", network: "Nordic Corridor", badge: "Regional" }
+];
+
+let selectedPick = 1;
+let deviceMode = 'desktop';
+
+const inputEl = document.getElementById('flight-input');
+const statusEl = document.getElementById('sim-status');
+const shellEl = document.getElementById('sim-shell');
+
+function setDeviceMode(mode) {
+  deviceMode = mode;
+  document.getElementById('btn-desktop').classList.toggle('active', mode === 'desktop');
+  document.getElementById('btn-mobile').classList.toggle('active', mode === 'mobile');
+  shellEl.classList.toggle('desktop-mode', mode === 'desktop');
+  shellEl.classList.toggle('mobile-mode', mode === 'mobile');
+}
+
+function selectOption(num) {
+  selectedPick = num;
+  [1, 2, 3].forEach(n => {
+    document.getElementById(`tab-opt-${n}`).classList.toggle('active', n === num);
+    document.getElementById(`view-opt-${n}`).style.display = n === num ? 'block' : 'none';
+  });
+  document.getElementById('tab-keycap').style.display = num === 2 ? 'inline-block' : 'none';
+}
+
+function applySearch(code, detail) {
+  inputEl.value = code;
+  statusEl.innerHTML = `Selected <strong style="color:var(--text-primary)">${code}</strong> · ${detail} (Ready to Investigate)`;
+}
+
+document.getElementById('btn-run-search').onclick = () => {
+  const v = inputEl.value.trim();
+  statusEl.innerHTML = v ? `Investigating flight <strong style="color:var(--text-primary)">${v}</strong> via Aviationstack API…` : `<span style="color:#f87171">Enter a flight number first.</span>`;
+};
+
+document.getElementById('btn-surprise').onclick = () => {
+  const r = CORRIDORS[Math.floor(Math.random() * CORRIDORS.length)];
+  applySearch(r.code, `${r.from} → ${r.to} (${r.fromCity} to ${r.toCity})`);
+};
+
+// ==========================================
+// RENDER OPTION 1: RUNWAY PILLS
+// ==========================================
+const pillsTrack = document.getElementById('pills-track');
+pillsTrack.innerHTML = CORRIDORS.map(c => `
+  <div class="corridor-pill-btn" onclick="applySearch('${c.code}', '${c.from} → ${c.to} · ${c.fromCity} to ${c.toCity}')">
+    <span class="pill-code">${c.code}</span>
+    <span class="pill-route">${c.from} → ${c.to}</span>
+    <span class="pill-city">${c.toCity}</span>
+    <span class="pill-type-tag">${c.badge}</span>
+  </div>
+`).join('');
+
+// ==========================================
+// RENDER OPTION 2: QUIET COPILOT
+// ==========================================
+let copilotIdx = 0;
+const copilotEl = document.getElementById('copilot-text');
+
+function updateCopilot() {
+  if (selectedPick !== 2 || inputEl.value) {
+    setTimeout(updateCopilot, 400);
+    return;
+  }
+  copilotIdx = (copilotIdx + 1) % CORRIDORS.length;
+  const c = CORRIDORS[copilotIdx];
+  
+  copilotEl.style.opacity = '0';
+  setTimeout(() => {
+    copilotEl.textContent = `${c.code} · ${c.fromCity} to ${c.toCity} (${c.from} → ${c.to})`;
+    copilotEl.style.opacity = '1';
+  }, 220);
+}
+setInterval(updateCopilot, 4500);
+
+function acceptCopilotFlight() {
+  const c = CORRIDORS[copilotIdx];
+  applySearch(c.code, `${c.from} → ${c.to} (${c.network})`);
+}
+
+function triggerKeycapAccept() {
+  acceptCopilotFlight();
+}
+
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Tab' && !inputEl.value && selectedPick === 2) {
+    e.preventDefault();
+    acceptCopilotFlight();
+  }
+});
+
+// ==========================================
+// RENDER OPTION 3: HAIRLINE TRAY
+// ==========================================
+const trayTable = document.getElementById('tray-table');
+trayTable.innerHTML = CORRIDORS.map(c => `
+  <div class="table-data-row" onclick="applySearch('${c.code}', '${c.from} → ${c.to} · ${c.fromCity} to ${c.toCity}'); toggleHairlineTray();">
+    <span class="td-code">${c.code}</span>
+    <span class="td-route">${c.from} → ${c.to}</span>
+    <span class="td-cities">${c.fromCity} to ${c.toCity}</span>
+    <span class="td-badge">${c.badge}</span>
+  </div>
+`).join('');
+
+function toggleHairlineTray() {
+  const drawer = document.getElementById('hairline-drawer');
+  const isOpen = drawer.classList.toggle('open');
+  document.getElementById('tray-chevron-icon').style.transform = isOpen ? 'rotate(180deg)' : 'none';
+}
+
+function toggleArchive() {
+  const box = document.getElementById('archive-box');
+  const isOpen = box.classList.toggle('open');
+  document.getElementById('archive-arrow').textContent = isOpen ? '▾' : '▸';
+}
+</script>
+</body>
+</html>

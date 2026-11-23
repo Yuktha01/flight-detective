@@ -1,0 +1,125 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Corridor prototypes</title>
+<style>
+:root{color-scheme:dark;--bg:#070b12;--card:#0d141f;--line:#1f2a3a;--lime:#d4ff3a;--blue:#38bdf8;--txt:#e8edf5;--mut:#7d8aa0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px system-ui,sans-serif;padding:16px}
+.mono,input,.tabs button,.cc small,.cap{font-family:ui-monospace,Menlo,monospace}
+h1{font-size:15px;margin:0 0 10px;color:var(--lime);letter-spacing:.1em}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{background:var(--card);color:var(--mut);border:1px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12px}
+.tabs button.on{color:#000;background:var(--lime);border-color:var(--lime)}
+.demo{display:none;max-width:900px}.demo.on{display:block}
+.desc{color:var(--mut);margin:0 0 10px;font-size:13px}
+.stage{position:relative;border:1px solid var(--line);border-radius:16px;padding:20px;min-height:400px;background:radial-gradient(ellipse at 80% 0,#13202e,var(--bg) 70%);overflow:hidden}
+.bar{display:flex;gap:8px}.bar input{flex:1;min-width:0;background:#0a1018;border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:13px 14px;font-size:13px}
+.bar input:focus{outline:1px solid var(--lime)}
+.go{background:var(--lime);color:#000;border:0;border-radius:10px;padding:0 16px;font-weight:700;cursor:pointer}
+.st{margin:8px 0 12px;font-size:12px;color:var(--blue);min-height:16px}
+.cc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;transition:.2s}
+.cc:hover{border-color:var(--lime)}.cc b{font-size:12px}.cc i{font:9px ui-monospace,monospace;color:var(--mut);border:1px solid var(--line);border-radius:4px;padding:1px 4px;margin-left:6px;font-style:normal}
+.cc h4{margin:6px 0;font:700 17px ui-monospace,monospace}.cc span{color:var(--blue);font:12px ui-monospace,monospace;display:block}.cc small{color:var(--mut);font-size:11px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+/* 1 map */
+.map{position:relative}.map svg{width:100%;display:block}
+.arc{fill:none;stroke:var(--lime);stroke-width:1.3;stroke-dasharray:3 3;opacity:.5;transition:.2s}
+.hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}
+.map.f .arc{opacity:.1}.map .arc.h{opacity:1;stroke-width:2.2}
+.tip{position:absolute;pointer-events:none;opacity:0;transition:opacity .15s;z-index:2;width:190px}
+/* 2 ghost */
+.cap{margin-top:8px;color:var(--mut);font-size:12px}.keycap{align-self:center;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:3px 7px;font:11px ui-monospace,monospace;color:var(--mut)}
+/* 3 flap */
+.fw{position:relative}.flap{display:flex;flex-wrap:wrap;gap:2px;font:700 16px ui-monospace,monospace;background:#05080d;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--lime)}
+.flap b{width:1.1ch;min-width:14px;text-align:center;background:#0e1520;border-radius:3px;padding:3px 1px;font-weight:700}
+.board{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#05080d;border:1px solid var(--lime);border-radius:8px;padding:8px;z-index:3;display:none}
+.fw:hover .board{display:block}.board .flap{border:0;padding:6px;cursor:pointer}.board .flap:hover{background:#0e1520}
+/* 4 shade */
+.win{position:relative;overflow:hidden;border-radius:14px;border:1px solid var(--line);padding:10px;transition:box-shadow .5s}
+.win .grid{opacity:.15;transition:.6s}.win.open .grid{opacity:1}.win.open{box-shadow:0 0 50px #d4ff3a33 inset}
+.shade{position:absolute;inset:0;background:linear-gradient(#cfd6df,#aab3c0);transition:transform .7s cubic-bezier(.7,0,.2,1);display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
+.shade::after{content:"";width:60px;height:10px;background:#8590a0;border-radius:6px 6px 0 0}
+.win.open .shade{transform:translateY(-100%)}
+.hint{position:absolute;inset:0;display:grid;place-items:center;color:#2b3442;font:700 11px ui-monospace,monospace;letter-spacing:.15em;pointer-events:none;z-index:2;transition:.3s}.win.open .hint{opacity:0}
+/* 5 tickets */
+.bp{position:relative;height:200px}.stub{background:var(--card);border:1px dashed var(--lime);color:var(--lime);border-radius:8px;padding:7px 12px;font:12px ui-monospace,monospace;cursor:pointer}
+.tk{position:absolute;top:40px;width:calc(25% - 8px);min-width:140px;background:#f3f5ee;color:#111;border-radius:8px;padding:10px 10px 22px;border-left:3px dashed #888;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(-50px) rotate(0) scale(.9);transition:.45s cubic-bezier(.2,1.2,.3,1);transition-delay:calc(var(--n)*60ms)}
+.tk b{font:700 17px ui-monospace,monospace;display:block}.tk span{font:11px ui-monospace,monospace}.tk::after{content:"";position:absolute;left:10px;right:10px;bottom:6px;height:9px;background:repeating-linear-gradient(90deg,#111 0 2px,#0000 2px 4px,#111 4px 5px,#0000 5px 8px)}
+.bp.open .tk{opacity:1;pointer-events:auto;transform:translateY(0) rotate(var(--r))}.bp.open .tk:hover{transform:translateY(-8px) rotate(0);z-index:5}
+/* 6 radar */
+.rw{height:300px}.radar{position:relative;width:46px;height:46px;border:1px solid var(--lime);border-radius:50%;transition:.5s cubic-bezier(.3,1.3,.4,1);background:radial-gradient(#0f1c14,#05080d);cursor:pointer;overflow:hidden;box-shadow:0 0 14px #d4ff3a44}
+.radar::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#d4ff3a66,#0000 25%);animation:sw 3s linear infinite}
+@keyframes sw{to{transform:rotate(360deg)}}
+.radar::after{content:"";position:absolute;inset:25%;border:1px solid #d4ff3a33;border-radius:50%}
+.radar:hover{width:280px;height:280px}.blip{position:absolute;width:12px;height:12px;margin:-6px;border-radius:50%;background:var(--lime);opacity:0;transition:.3s .3s;box-shadow:0 0 10px var(--lime);cursor:pointer}
+.radar:hover .blip{opacity:1}.blip:hover{transform:scale(1.5)}
+.rl{margin-top:10px;font:12px ui-monospace,monospace;color:var(--blue)}
+/* 7 palette */
+.kb{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:7px 12px;font:12px ui-monospace,monospace;cursor:pointer}
+.ov{position:absolute;inset:0;background:#05080dcc;backdrop-filter:blur(6px);display:none;justify-content:center;padding-top:60px;z-index:9}.ov.on{display:flex}
+.pal{width:min(420px,90%);height:fit-content;background:var(--card);border:1px solid var(--lime);border-radius:12px;padding:6px}
+.pal div{padding:10px;border-radius:8px;display:flex;justify-content:space-between;cursor:pointer;font:13px ui-monospace,monospace}.pal div.a{background:#d4ff3a22;color:var(--lime)}.pal em{color:var(--mut);font-style:normal}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01s!important}}
+</style></head><body>
+<h1>CORRIDOR UI PROTOTYPES</h1>
+<div class="tabs" id="tabs"></div>
+<div id="demos">
+<section class="demo"><p class="desc">1 · Live route map. Hover an arc, click to run it.</p><div class="stage"><div class="slot"></div><div class="map"><svg viewBox="0 0 600 260"><defs><pattern id="dt" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".9" fill="#2a3a52"/></pattern></defs><rect width="600" height="260" fill="url(#dt)"/><g id="arcs"></g></svg><div class="tip"></div></div></div></section>
+<section class="demo"><p class="desc">2 · Ghost typing. Placeholder cycles examples, press Tab to accept. Hover/focus pauses.</p><div class="stage"><div class="slot"></div><div class="cap"></div></div></section>
+<section class="demo"><p class="desc">3 · Split-flap board. Flips every 4s, hover to drop the full board, click a row.</p><div class="stage"><div class="slot"></div><div class="fw"><div class="flap main"></div><div class="board"></div></div></div></section>
+<section class="demo"><p class="desc">4 · Window shade. Hover or click the shade.</p><div class="stage"><div class="slot"></div><div class="win"><div class="grid cards"></div><div class="shade"></div><div class="hint">▲ PULL SHADE ▲</div></div></div></section>
+<section class="demo"><p class="desc">5 · Boarding passes print out from the Examples stub.</p><div class="stage"><div class="slot"></div><div class="bp"><button class="stub">✈ Examples ▾</button></div></div></section>
+<section class="demo"><p class="desc">6 · Radar. Hover the radar, then hover/click a blip.</p><div class="stage"><div class="slot"></div><div class="rw"><div class="radar"></div><div class="rl">Hover radar to scan corridors</div></div></div></section>
+<section class="demo"><p class="desc">7 · Command palette. Click the button or press / then arrows + Enter.</p><div class="stage"><div class="slot"></div><button class="kb">⌘K Browse corridors <b>/</b></button><div class="ov"><div class="pal"></div></div></div></section>
+</div>
+<script>
+const C=[["Eurasian Corridor","CONTINENTAL","SU1531","TOF","SVO","Tomsk to Moscow",[442,56],[362,57]],["Indo-Pacific Corridor","LONG-HAUL","AI302","DEL","SYD","Delhi to Sydney",[428,102],[552,206]],["Atlantic Corridor","TRANSATLANTIC","BA249","LHR","GIG","London to Rio",[299,64],[228,187]],["Nordic Corridor","REGIONAL","W24979","CPH","BLL","Copenhagen to Billund",[321,57],[315,57]]];
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const D=$$('.demo');
+const BAR='<div class="bar"><input placeholder="Search flight number (e.g. BA249, AI302, DL402)"><span class="keycap" hidden>Tab ↹</span><button class="go">Investigate →</button></div><div class="st"></div>';
+D.forEach(d=>$('.slot',d).innerHTML=BAR);
+const inp=d=>$('input',d),pick=(d,c)=>{inp(d).value=c[2];$('.st',d).textContent='Investigating '+c[2]+' · '+c[3]+' → '+c[4]+'…'};
+D.forEach(d=>$('.go',d).onclick=()=>{const v=inp(d).value.trim();$('.st',d).textContent=v?'Investigating '+v+'…':'Enter a flight number first'});
+const card=(c,i)=>`<div class="cc" data-i="${i}"><b>${c[0]}</b><i>${c[1]}</i><h4>${c[2]}</h4><span>${c[3]} → ${c[4]}</span><small>${c[5]}</small></div>`;
+const tabs=$('#tabs');
+['Route map','Ghost typing','Split-flap','Window shade','Boarding passes','Radar','Palette'].forEach((n,i)=>{const b=document.createElement('button');b.textContent=(i+1)+' '+n;b.onclick=()=>show(i);tabs.append(b)});
+function show(i){$$('button',tabs).forEach((b,j)=>b.classList.toggle('on',i==j));D.forEach((d,j)=>d.classList.toggle('on',i==j));location.hash='d'+(i+1)}
+show(Math.max(0,(parseInt(location.hash.slice(2))||1)-1));
+/* 1 map */
+{const d=D[0],g=$('#arcs'),m=$('.map',d),tip=$('.tip',d);
+C.forEach((c,i)=>{const[a,b]=[c[6],c[7]],mx=(a[0]+b[0])/2,my=Math.min(a[1],b[1])-40-Math.abs(a[0]-b[0])/6,p=`M${a[0]},${a[1]} Q${mx},${my} ${b[0]},${b[1]}`;
+g.insertAdjacentHTML('beforeend',`<g><path class="arc" d="${p}"/><circle r="3" fill="#d4ff3a"><animateMotion dur="${6+i}s" repeatCount="indefinite" path="${p}"/></circle><circle cx="${a[0]}" cy="${a[1]}" r="2.5" fill="#38bdf8"/><circle cx="${b[0]}" cy="${b[1]}" r="2.5" fill="#38bdf8"/><text x="${a[0]+4}" y="${a[1]+12}" fill="#7d8aa0" font-size="8">${c[3]}</text><text x="${b[0]+4}" y="${b[1]+12}" fill="#7d8aa0" font-size="8">${c[4]}</text><path class="hit" d="${p}"/></g>`);
+const gr=g.lastElementChild,hit=$('.hit',gr),arc=$('.arc',gr);
+hit.onmouseenter=()=>{m.classList.add('f');arc.classList.add('h');tip.innerHTML=card(c,i);tip.style.opacity=1};
+hit.onmousemove=e=>{const r=m.getBoundingClientRect();tip.style.left=Math.min(e.clientX-r.left+14,r.width-195)+'px';tip.style.top=e.clientY-r.top+14+'px'};
+hit.onmouseleave=()=>{m.classList.remove('f');arc.classList.remove('h');tip.style.opacity=0};
+hit.onclick=()=>pick(d,c)})}
+/* 2 ghost */
+{const d=D[1],i=inp(d),cap=$('.cap',d),kc=$('.keycap',d);kc.hidden=false;let k=0,j=0,del=false,p=false;
+d.addEventListener('mouseenter',()=>p=true);d.addEventListener('mouseleave',()=>p=false);i.onfocus=()=>p=true;i.onblur=()=>p=false;
+const t=()=>{if(p||!d.classList.contains('on')||i.value){setTimeout(t,300);return}const s=C[k][2]+' · '+C[k][5];
+if(!del){j++;if(j>=s.length){del=true;i.placeholder=s;cap.textContent=C[k][0]+' · '+C[k][1];return void setTimeout(t,1500)}}else{j--;if(j<=0){del=false;k=(k+1)%4}}
+i.placeholder=s.slice(0,j)+'▍';setTimeout(t,del?22:55)};t();
+i.onkeydown=e=>{if(e.key=='Tab'&&!i.value){e.preventDefault();pick(d,C[k])}}}
+/* 3 flap */
+{const d=D[2],R=()=>'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.random()*36|0],txt=c=>(c[2].padEnd(7)+c[3]+'→'+c[4]+' '+c[1]).padEnd(30);
+const flip=(el,s)=>{el.innerHTML='';[...s].forEach((ch,i)=>{const b=document.createElement('b');el.append(b);let n=0;const iv=setInterval(()=>{const end=n++>6+i/2;b.textContent=end?ch:R();if(end)clearInterval(iv)},45)})};
+const main=$('.main',d),bd=$('.board',d);let k=0;let paused=false;
+C.forEach((c,i)=>{const r=document.createElement('div');r.className='flap';r.onclick=()=>pick(d,c);bd.append(r)});
+const cyc=()=>{if(!paused&&d.classList.contains('on')){flip(main,txt(C[k]));k=(k+1)%4}};cyc();setInterval(cyc,4000);
+$('.fw',d).onmouseenter=()=>{paused=true;$$('.flap',bd).forEach((r,i)=>flip(r,txt(C[i])))};$('.fw',d).onmouseleave=()=>paused=false;main.onclick=()=>pick(d,C[(k+3)%4])}
+/* 4 shade */
+{const d=D[3],w=$('.win',d);$('.cards',d).innerHTML=C.map(card).join('');
+$$('.cc',d).forEach(e=>e.onclick=()=>pick(d,C[e.dataset.i]));$('.shade',d).onclick=()=>w.classList.toggle('open');w.onmouseenter=()=>w.classList.add('open');w.onmouseleave=()=>w.classList.remove('open')}
+/* 5 tickets */
+{const d=D[4],bp=$('.bp',d);C.forEach((c,i)=>{const t=document.createElement('div');t.className='tk';t.style.cssText=`--n:${i};--r:${[-5,-2,2,5][i]}deg;left:${i*25}%`;t.innerHTML=`<small>${c[1]}</small><b>${c[2]}</b><span>${c[3]} → ${c[4]}</span><br><span>${c[5]}</span>`;t.onclick=()=>pick(d,c);bp.append(t)});
+$('.stub',d).onclick=()=>bp.classList.toggle('open');bp.onmouseenter=()=>bp.classList.add('open');bp.onmouseleave=()=>bp.classList.remove('open')}
+/* 6 radar */
+{const d=D[5],r=$('.radar',d),l=$('.rl',d);[20,100,200,300].forEach((a,i)=>{const rad=[.55,.8,.4,.7][i]*50,x=50+rad*Math.sin(a*Math.PI/180),y=50-rad*Math.cos(a*Math.PI/180),b=document.createElement('div');b.className='blip';b.style.cssText=`left:${x}%;top:${y}%`;
+b.onmouseenter=()=>l.textContent=C[i][2]+' · '+C[i][3]+' → '+C[i][4]+' · '+C[i][0];b.onclick=()=>pick(d,C[i]);r.append(b)})}
+/* 7 palette */
+{const d=D[6],ov=$('.ov',d),pal=$('.pal',d);let a=0;
+const draw=()=>pal.innerHTML=C.map((c,i)=>`<div class="${i==a?'a':''}" data-i="${i}"><span>${c[2]} ${c[3]}→${c[4]}</span><em>${c[0]}</em></div>`).join('');
+const open=o=>{ov.classList.toggle('on',o);if(o){a=0;draw()}};
+$('.kb',d).onclick=()=>open(true);ov.onclick=e=>{const r=e.target.closest('[data-i]');if(r){pick(d,C[r.dataset.i]);open(false)}else if(e.target==ov)open(false)};
+document.addEventListener('keydown',e=>{if(!d.classList.contains('on'))return;
+if(!ov.classList.contains('on')){if(e.key=='/'&&document.activeElement.tagName!='INPUT'){e.preventDefault();open(true)}return}
+if(e.key=='Escape')open(false);if(e.key=='ArrowDown'){a=(a+1)%4;draw()}if(e.key=='ArrowUp'){a=(a+3)%4;draw()}if(e.key=='Enter'){pick(d,C[a]);open(false)}})}
+</script></body></html>
