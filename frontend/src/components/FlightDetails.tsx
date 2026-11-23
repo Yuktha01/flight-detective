@@ -978,6 +978,7 @@ function FlightRoute({ flight }: FlightDetailsProps) {
 
   const handleGrabPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (freeRef.current) return
+    e.preventDefault()
     initAudio()
     if (typeof e.currentTarget.setPointerCapture === 'function') {
       try {
@@ -1338,45 +1339,288 @@ function AircraftInfo({ flight }: FlightDetailsProps) {
   )
 }
 
+function getFlightLevel(altitudeMeters: number | null | undefined): { fl: string; feet: string } | null {
+  if (typeof altitudeMeters !== 'number' || !Number.isFinite(altitudeMeters)) return null
+  const feet = Math.round(altitudeMeters * 3.28084)
+  const fl = Math.round(feet / 100)
+  return { fl: `FL${fl}`, feet: `${feet.toLocaleString()} ft` }
+}
+
+function getAirspeedDetails(speedKmh: number | null | undefined): { knots: string; mach: string } | null {
+  if (typeof speedKmh !== 'number' || !Number.isFinite(speedKmh)) return null
+  const knots = `${Math.round(speedKmh * 0.539957)} kts`
+  const mach = (speedKmh / 1060).toFixed(2)
+  return { knots, mach: `~${mach} Mach` }
+}
+
+function getCardinalDirection(deg: number | null | undefined): string {
+  if (typeof deg !== 'number' || !Number.isFinite(deg)) return ''
+  const normalized = ((deg % 360) + 360) % 360
+  const cardinals = [
+    'N · North',
+    'NNE · North-Northeast',
+    'NE · Northeast',
+    'ENE · East-Northeast',
+    'E · East',
+    'ESE · East-Southeast',
+    'SE · Southeast',
+    'SSE · South-Southeast',
+    'S · South',
+    'SSW · South-Southwest',
+    'SW · Southwest',
+    'WSW · West-Southwest',
+    'W · West',
+    'WNW · West-Northwest',
+    'NW · Northwest',
+    'NNW · North-Northwest',
+  ]
+  const index = Math.round(normalized / 22.5) % 16
+  return cardinals[index]
+}
+
+function getVerticalStatus(speed: number | null | undefined): { label: string; sub: string; arrow: string } {
+  if (typeof speed !== 'number' || !Number.isFinite(speed)) {
+    return { label: 'Not available', sub: 'Vertical rate', arrow: '—' }
+  }
+  if (Math.abs(speed) < 0.5) {
+    return { label: 'Level flight', sub: 'Stable cruise corridor', arrow: '→' }
+  }
+  if (speed > 0) {
+    return { label: `Climbing (+${Math.round(speed)} m/s)`, sub: 'Ascending altitude', arrow: '↗' }
+  }
+  return { label: `Descending (${Math.round(speed)} m/s)`, sub: 'Descent / Approach', arrow: '↘' }
+}
+
+function getCoordinatesLabel(lat: number | null | undefined, lon: number | null | undefined): string {
+  if (typeof lat !== 'number' || typeof lon !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return ''
+  }
+  const latDir = lat >= 0 ? 'N' : 'S'
+  const lonDir = lon >= 0 ? 'E' : 'W'
+  return `${Math.abs(lat).toFixed(2)}° ${latDir}, ${Math.abs(lon).toFixed(2)}° ${lonDir}`
+}
+
 function LiveFlightInfo({ flight }: FlightDetailsProps) {
   const live = flight.live
   if (!live) return null
 
+  const flightLevelInfo = getFlightLevel(live.altitudeMeters)
+  const speedInfo = getAirspeedDetails(live.speedKmh)
+  const cardinalText = getCardinalDirection(live.direction)
+  const verticalStatus = getVerticalStatus(live.speedVertical)
+  const coordsFormatted = getCoordinatesLabel(live.latitude, live.longitude)
+
+  const altitudePercent = typeof live.altitudeMeters === 'number' && Number.isFinite(live.altitudeMeters)
+    ? Math.min(100, Math.max(4, Math.round((live.altitudeMeters / 12500) * 100)))
+    : 0
+
+  const hasHeading = typeof live.direction === 'number' && Number.isFinite(live.direction)
+  const headingDeg = hasHeading ? live.direction! : 0
+
+  // Calculate radar blip coordinates on 120x120 scope
+  const rad = ((headingDeg - 90) * Math.PI) / 180
+  const blipRadius = 38
+  const blipX = Math.round(60 + blipRadius * Math.cos(rad))
+  const blipY = Math.round(60 + blipRadius * Math.sin(rad))
+
   return (
     <section className="detail-section live-section" aria-labelledby="live-heading">
       <div className="live-heading-row">
-        <div>
-          <p className="section-kicker">LIVE POSITION</p>
-          <h3 id="live-heading">In the air</h3>
+        <div className="live-heading-meta">
+          <div>
+            <p className="section-kicker">LIVE POSITION</p>
+            <h3 id="live-heading">{live.isGround ? 'On the ground' : 'In the air'}</h3>
+          </div>
+          <span className="live-phase-pill">
+            {live.isGround
+              ? 'Surface Movement · On Ground'
+              : flightLevelInfo
+                ? `Cruising at ${flightLevelInfo.fl} · Stable Vector`
+                : 'Active Airspace Telemetry'}
+          </span>
         </div>
-        <span className="live-indicator">
-          <i aria-hidden="true" /> LIVE
-        </span>
+        <div className="live-header-badges">
+          <span className="live-indicator">
+            <i aria-hidden="true" /> LIVE
+          </span>
+        </div>
       </div>
+
+      {/* Primary Avionics Instruments HUD */}
+      <div className="live-instruments-hud" aria-label="Flight telemetry instruments">
+        {/* 1. Compass Rose & Directional Vector */}
+        <div className="hud-instrument hud-compass-pod">
+          <div className="hud-pod-header">
+            <span className="hud-pod-title">HEADING VECTOR</span>
+            <span className="hud-pod-badge">{hasHeading ? `${Math.round(headingDeg)}°` : '—'}</span>
+          </div>
+          <div className="hud-compass-stage">
+            <svg className="hud-compass-svg" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="54" className="compass-rim" />
+              <circle cx="60" cy="60" r="44" className="compass-inner-ring" />
+              <text x="60" y="20" className="compass-cardinal cardinal-n" textAnchor="middle">N</text>
+              <text x="104" y="64" className="compass-cardinal" textAnchor="middle">E</text>
+              <text x="60" y="108" className="compass-cardinal" textAnchor="middle">S</text>
+              <text x="16" y="64" className="compass-cardinal" textAnchor="middle">W</text>
+              <line x1="60" y1="8" x2="60" y2="13" className="compass-tick major" />
+              <line x1="60" y1="107" x2="60" y2="112" className="compass-tick major" />
+              <line x1="8" y1="60" x2="13" y2="60" className="compass-tick major" />
+              <line x1="107" y1="60" x2="112" y2="60" className="compass-tick major" />
+              <g
+                className="compass-needle"
+                style={{
+                  transform: `rotate(${headingDeg}deg)`,
+                  transformOrigin: '60px 60px',
+                  transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                <line x1="60" y1="60" x2="60" y2="16" className="compass-track-line" />
+                <polygon points="60,14 56,22 64,22" className="compass-heading-bug" />
+                <path
+                  d="M60 38 L63 50 L78 58 L78 62 L63 59 L63 74 L68 78 L68 81 L60 79 L52 81 L52 78 L57 74 L57 59 L42 62 L42 58 L57 50 Z"
+                  className="compass-aircraft"
+                />
+              </g>
+            </svg>
+            <div className="hud-compass-readout">
+              <div className="hud-readout-value">
+                {hasHeading ? `${Math.round(headingDeg)}°` : '---'}
+              </div>
+              <div className="hud-readout-desc">{cardinalText || 'Track Course'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Altitude Profile & Airspeed Tape */}
+        <div className="hud-instrument hud-profile-pod">
+          <div className="hud-pod-header">
+            <span className="hud-pod-title">FLIGHT PROFILE</span>
+            {flightLevelInfo && <span className="hud-flight-level-badge">{flightLevelInfo.fl}</span>}
+          </div>
+          <div className="hud-profile-stage">
+            <div className="hud-altitude-tape">
+              <div className="tape-header">
+                <span className="tape-label">CRUISE ALTITUDE</span>
+                <span className="tape-value">
+                  {typeof live.altitudeMeters === 'number' && Number.isFinite(live.altitudeMeters)
+                    ? `${Math.round(live.altitudeMeters).toLocaleString()} m`
+                    : '---'}
+                  {flightLevelInfo && <span className="tape-subval">({flightLevelInfo.feet})</span>}
+                </span>
+              </div>
+              <div className="tape-bar-track" aria-hidden="true">
+                <div
+                  className="tape-bar-fill"
+                  style={{ width: `${altitudePercent}%` }}
+                />
+                <div className="tape-corridor-marker" style={{ left: '72%', width: '28%' }} title="Standard Cruising Corridor" />
+              </div>
+              <div className="tape-scale-ticks">
+                <span>0 m</span>
+                <span>3,000</span>
+                <span>6,000</span>
+                <span>9,000</span>
+                <span className="corridor-tick">12,000m+ (Cruise)</span>
+              </div>
+            </div>
+
+            <div className="hud-profile-metrics-split">
+              <div className="hud-split-item">
+                <span className="split-label">GROUND SPEED</span>
+                <span className="split-value">
+                  {typeof live.speedKmh === 'number' && Number.isFinite(live.speedKmh)
+                    ? `${Math.round(live.speedKmh).toLocaleString()} km/h`
+                    : '---'}
+                </span>
+                {speedInfo && <span className="split-sub">{speedInfo.knots} · {speedInfo.mach}</span>}
+              </div>
+              <div className="hud-split-item">
+                <span className="split-label">VERTICAL RATE</span>
+                <span className={`split-value split-vrate ${verticalStatus.arrow !== '—' ? 'vrate-active' : ''}`}>
+                  <span className="vrate-arrow">{verticalStatus.arrow}</span>{' '}
+                  {typeof live.speedVertical === 'number' && Number.isFinite(live.speedVertical)
+                    ? `${live.speedVertical} m/s`
+                    : '---'}
+                </span>
+                <span className="split-sub">{verticalStatus.label}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Tactical Airspace Radar Scope */}
+        <div className="hud-instrument hud-radar-pod">
+          <div className="hud-pod-header">
+            <span className="hud-pod-title">TACTICAL RADAR</span>
+            <span className="hud-radar-lock-pill">
+              <span className="radar-status-dot" />
+              ADS-B LOCKED
+            </span>
+          </div>
+          <div className="hud-radar-stage">
+            <svg className="hud-radar-svg" viewBox="0 0 120 120" aria-hidden="true">
+              <defs>
+                <radialGradient id="radarSweepGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(56, 189, 248, 0.4)" />
+                  <stop offset="60%" stopColor="rgba(56, 189, 248, 0.08)" />
+                  <stop offset="100%" stopColor="transparent" />
+                </radialGradient>
+              </defs>
+              <circle cx="60" cy="60" r="54" className="radar-ring" />
+              <circle cx="60" cy="60" r="36" className="radar-ring dashed" />
+              <circle cx="60" cy="60" r="18" className="radar-ring dashed" />
+              <line x1="60" y1="6" x2="60" y2="114" className="radar-crosshair" />
+              <line x1="6" y1="60" x2="114" y2="60" className="radar-crosshair" />
+              <text x="63" y="27" className="radar-range-text">100NM</text>
+              <text x="63" y="45" className="radar-range-text">50NM</text>
+              <g className="radar-sweep-arm">
+                <line x1="60" y1="60" x2="60" y2="6" className="radar-sweep-line" />
+                <path d="M60 60 L60 6 A54 54 0 0 1 106 28 Z" fill="url(#radarSweepGrad)" opacity="0.6" />
+              </g>
+              <g transform={`translate(${blipX}, ${blipY})`}>
+                <circle cx="0" cy="0" r="8" className="radar-blip-pulse" />
+                <circle cx="0" cy="0" r="3.5" className="radar-blip-core" />
+              </g>
+            </svg>
+            <div className="hud-radar-readout">
+              <div className="hud-coords-value">
+                {coordsFormatted || (typeof live.latitude === 'number' && typeof live.longitude === 'number' ? `${live.latitude.toFixed(2)}, ${live.longitude.toFixed(2)}` : 'Position locked')}
+              </div>
+              <div className="hud-coords-sub">Transponder WGS-84 Fix</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Telemetry Metric Detail Cards */}
       <dl className="compact-details live-details">
         <div className="spec-item">
           <dt>Altitude</dt>
           <dd className="mono-value">
             {formatLiveNumber(live.altitudeMeters, (value) => `${Math.round(value).toLocaleString()} m`)}
           </dd>
+          {flightLevelInfo && <span className="spec-sub">{flightLevelInfo.fl} · {flightLevelInfo.feet}</span>}
         </div>
         <div className="spec-item">
           <dt>Ground speed</dt>
           <dd className="mono-value">
             {formatLiveNumber(live.speedKmh, (value) => `${Math.round(value).toLocaleString()} km/h`)}
           </dd>
+          {speedInfo && <span className="spec-sub">{speedInfo.knots} · {speedInfo.mach}</span>}
         </div>
         <div className="spec-item">
           <dt>Vertical speed</dt>
           <dd className="mono-value">
             {formatLiveNumber(live.speedVertical, (value) => value.toLocaleString())}
           </dd>
+          <span className="spec-sub">{verticalStatus.label}</span>
         </div>
         <div className="spec-item">
           <dt>Heading</dt>
           <dd className="mono-value">
             {formatLiveNumber(live.direction, (value) => `${Math.round(value)}\u00b0`)}
           </dd>
+          {cardinalText && <span className="spec-sub">{cardinalText}</span>}
         </div>
         <div className="spec-item">
           <dt>Position</dt>
@@ -1389,10 +1633,12 @@ function LiveFlightInfo({ flight }: FlightDetailsProps) {
               ? live.longitude.toFixed(2)
               : 'Not available'}
           </dd>
+          {coordsFormatted && <span className="spec-sub">{coordsFormatted}</span>}
         </div>
         <div className="spec-item">
           <dt>Updated</dt>
           <dd className="mono-value">{formatDateTime(live.updated)}</dd>
+          <span className="spec-sub">Live ADS-B Telemetry</span>
         </div>
         <div className="spec-item">
           <dt>Aircraft state</dt>
@@ -1403,6 +1649,7 @@ function LiveFlightInfo({ flight }: FlightDetailsProps) {
                 : 'Airborne'
               : 'Not available'}
           </dd>
+          <span className="spec-sub">{live.isGround ? 'Surface Movement' : 'Active Transponder'}</span>
         </div>
       </dl>
     </section>

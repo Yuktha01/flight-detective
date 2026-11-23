@@ -2,16 +2,17 @@
    Flight Detective — App Styles (Batch 4.2: Final UI Polish & Visual Balance)
    ========================================================================== */
 
-/* App Shell & Core Layout - Spanning Full Viewport Width */
+/* App Shell & Core Layout - Spanning Responsive Boundary across Ultra-Wide to Mobile */
 .app-shell {
   width: 100%;
-  max-width: 100%;
+  max-width: 1440px;
   min-height: 100vh;
-  margin: 0;
-  padding: 0 clamp(16px, 3vw, 48px);
+  margin: 0 auto;
+  padding: 0 clamp(10px, 3.5vw, 48px);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 main {
@@ -122,6 +123,14 @@ main {
   color: #ffffff;
 }
 
+.nav-link-full {
+  display: inline;
+}
+
+.nav-link-short {
+  display: none;
+}
+
 .nav-status-pill {
   display: inline-flex;
   align-items: center;
@@ -200,8 +209,8 @@ main {
   --hero-cruise-duration: 26s;
   --hero-warmth-duration: 9s;
   --hero-atmosphere-duration: 28s;
-  --hero-beacon-right: 46.5%;
-  --hero-beacon-top: 38.2%;
+  --hero-beacon-right: 6.5%;
+  --hero-beacon-top: 3.6%;
 }
 
 .search-hero.cinematic-hero {
@@ -251,7 +260,7 @@ main {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 55% 42%;
+  object-position: 100% 50%;
   opacity: 1;
   image-rendering: high-quality;
   image-rendering: -webkit-optimize-contrast;
@@ -261,8 +270,8 @@ main {
 
 .hero-beacon-strobe {
   position: absolute;
-  right: var(--hero-beacon-right, 46.5%);
-  top: var(--hero-beacon-top, 38.2%);
+  right: var(--hero-beacon-right, 6.5%);
+  top: var(--hero-beacon-top, 3.6%);
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -452,6 +461,7 @@ h1.hero-heading-editorial {
 }
 
 .input-field-wrap {
+  position: relative;
   display: flex;
   align-items: center;
   flex: 1 1 320px;
@@ -1569,13 +1579,28 @@ h1.hero-heading-editorial {
   border: 1px solid var(--border-medium);
   border-radius: 20px;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .route-section-heading {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 0;
+}
+
+.route-mobile-corridor {
+  display: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--signal-cyan);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
 }
 
 #route-heading,
@@ -1618,15 +1643,53 @@ h1.hero-heading-editorial {
   .geodesic-route-card .route-card-title {
     color: #0b1220;
   }
+
+  .mobile-boarding-pass {
+    background: linear-gradient(145deg, #ffffff 0%, #f6f8fb 100%);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 24px rgba(10, 16, 28, 0.06);
+  }
+
+  .mobile-pass-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(0, 0, 0, 0.015);
+  }
+
+  .mobile-pass-logo-badge {
+    background: rgba(29, 111, 216, 0.1);
+    color: var(--acc, #1d6fd8);
+  }
+
+  .mobile-pass-status-pill {
+    background: rgba(29, 111, 216, 0.08);
+    color: var(--acc, #1d6fd8);
+    border: 1px solid rgba(29, 111, 216, 0.2);
+  }
+
+  .mobile-pass-grid {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+}
+
+/* Desktop default: Hide mobile pass, always show canvas */
+@media (min-width: 641px) {
+  
+  .boarding-pass-box {
+    display: flex !important;
+  }
 }
 
 #box {
   position: relative;
   width: 100%;
-  overflow: visible;
+  max-width: 100%;
+  overflow: hidden;
   margin-top: 10px;
   display: flex;
   justify-content: center;
+  touch-action: none;
 }
 
 #stage {
@@ -1636,6 +1699,7 @@ h1.hero-heading-editorial {
   margin: 0 auto;
   transform-origin: center top;
   overflow: visible;
+  touch-action: none;
 }
 
 .t {
@@ -2206,13 +2270,54 @@ h1.hero-heading-editorial {
 
 .live-section {
   border-color: rgba(56, 189, 248, 0.35);
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.05) 0%, var(--bg-canvas) 70%);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.06) 0%, rgba(16, 21, 34, 0.95) 40%, var(--bg-canvas) 100%);
+  position: relative;
+  overflow: hidden;
+  align-self: start;
+}
+
+.live-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.8), transparent);
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .live-section {
+    grid-column: 1 / -1;
+  }
 }
 
 .live-heading-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.live-heading-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.live-phase-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
 }
 
 .live-indicator {
@@ -2236,6 +2341,380 @@ h1.hero-heading-editorial {
   border-radius: 50%;
   background: currentColor;
   animation: radarPulse 1.2s infinite ease-out;
+}
+
+/* Tactical Cockpit Instruments HUD Cluster */
+.live-instruments-hud {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 6px 0;
+}
+
+@media (max-width: 960px) {
+  .live-instruments-hud {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hud-instrument {
+  background: rgba(16, 21, 34, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.hud-pod-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hud-pod-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hud-pod-badge,
+.hud-flight-level-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.14);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.hud-radar-lock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #4ade80;
+  letter-spacing: 0.06em;
+}
+
+.radar-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+}
+
+/* Compass Pod */
+.hud-compass-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.hud-compass-svg {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.compass-rim {
+  fill: rgba(7, 9, 14, 0.6);
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1.5;
+}
+
+.compass-inner-ring {
+  fill: none;
+  stroke: rgba(56, 189, 248, 0.2);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.compass-cardinal {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  fill: #94a3b8;
+}
+
+.compass-cardinal.cardinal-n {
+  fill: #38bdf8;
+}
+
+.compass-tick {
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 1.5;
+}
+
+.compass-track-line {
+  stroke: rgba(56, 189, 248, 0.7);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 2;
+}
+
+.compass-heading-bug {
+  fill: #38bdf8;
+}
+
+.compass-aircraft {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 3px rgba(56, 189, 248, 0.8));
+}
+
+.hud-compass-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hud-readout-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.hud-readout-desc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* Flight Profile Pod */
+.hud-profile-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hud-altitude-tape {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tape-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.tape-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+}
+
+.tape-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.tape-subval {
+  font-size: 11px;
+  font-weight: 600;
+  color: #38bdf8;
+  margin-left: 6px;
+}
+
+.tape-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tape-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tape-corridor-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(56, 189, 248, 0.18);
+  border-left: 1px dashed rgba(56, 189, 248, 0.5);
+  border-right: 1px dashed rgba(56, 189, 248, 0.5);
+}
+
+.tape-scale-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.corridor-tick {
+  color: #38bdf8;
+}
+
+.hud-profile-metrics-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hud-split-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.split-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.split-value {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.split-vrate.vrate-active {
+  color: #38bdf8;
+}
+
+.vrate-arrow {
+  color: #38bdf8;
+  font-weight: 900;
+}
+
+.split-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* Radar Pod */
+.hud-radar-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.hud-radar-svg {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.radar-ring {
+  fill: rgba(7, 9, 14, 0.6);
+  stroke: rgba(56, 189, 248, 0.22);
+  stroke-width: 1;
+}
+
+.radar-ring.dashed {
+  stroke-dasharray: 2 3;
+}
+
+.radar-crosshair {
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1;
+}
+
+.radar-range-text {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 700;
+  fill: #64748b;
+}
+
+@keyframes radarSweepRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.radar-sweep-arm {
+  transform-origin: 60px 60px;
+  animation: radarSweepRotate 4s linear infinite;
+}
+
+.radar-sweep-line {
+  stroke: #38bdf8;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 3px #38bdf8);
+}
+
+.radar-blip-pulse {
+  fill: none;
+  stroke: #38bdf8;
+  stroke-width: 1.5;
+  animation: radarPulse 1.6s infinite ease-out;
+}
+
+.radar-blip-core {
+  fill: #38bdf8;
+  filter: drop-shadow(0 0 4px #38bdf8);
+}
+
+.hud-radar-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-coords-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.hud-coords-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* Secondary Spec Subtitle inside spec-item */
+.spec-sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
 }
 
 
@@ -2547,13 +3026,25 @@ h1.hero-heading-editorial {
 }
 
 @media (max-width: 640px) {
+  /* Masthead & Navigation */
   .masthead {
-    height: 60px;
-    padding: 0 4px;
+    height: 56px;
+    padding: 0;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+    border-radius: 5px;
   }
 
   .brand-text {
-    font-size: 17px;
+    font-size: 15px;
   }
 
   .brand-sub {
@@ -2561,7 +3052,7 @@ h1.hero-heading-editorial {
   }
 
   .masthead-nav {
-    gap: 8px;
+    gap: 6px;
   }
 
   .nav-link {
@@ -2569,25 +3060,32 @@ h1.hero-heading-editorial {
     padding: 4px 6px;
   }
 
+  .nav-link-full {
+    display: none;
+  }
+
+  .nav-link-short {
+    display: inline;
+  }
+
   .nav-status-pill {
     display: none;
   }
 
   .nav-social-actions {
-    gap: 6px;
+    gap: 5px;
   }
 
-  /* Mobile: Dedicated social icon buttons (GitHub & LinkedIn) with free-to-use vector icons */
   .nav-icon-btn,
   .nav-github-btn,
   .nav-linkedin-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 7px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--border-medium);
     flex-shrink: 0;
@@ -2603,28 +3101,33 @@ h1.hero-heading-editorial {
   .nav-icon-btn .linkedin-icon,
   .nav-github-btn .github-icon,
   .nav-linkedin-btn .linkedin-icon {
-    width: 19px;
-    height: 19px;
+    width: 17px;
+    height: 17px;
     display: block;
   }
 
-  .search-command-bar {
-    flex-direction: column;
+  /* Search Hero & Typography */
+  .search-hero.cinematic-hero {
+    min-height: auto;
+    padding: 28px 16px 24px;
+    margin-top: 12px;
+    border-radius: 16px;
+    gap: 24px;
   }
 
-  .search-hero.cinematic-hero {
-    min-height: 480px;
-    padding: clamp(32px, 8vw, 44px) 18px 24px;
+  h1.hero-heading-editorial {
+    font-size: clamp(34px, 9vw, 52px);
+    line-height: 1.05;
   }
 
   .hero-aircraft-img {
-    object-position: 56% 38%;
+    object-position: 80% 50%;
     opacity: 0.95;
   }
 
   .hero-beacon-strobe {
-    right: 46.5%;
-    top: 38.2%;
+    right: 8%;
+    top: 4%;
   }
 
   .hero-gradient-overlay {
@@ -2633,17 +3136,56 @@ h1.hero-heading-editorial {
       linear-gradient(90deg, rgba(7, 9, 14, 0.5) 0%, transparent 100%);
   }
 
-  .input-field-wrap,
-  .search-actions,
+  /* Search Command Bar & Full-Width Stacking */
+  .search-command-bar {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .input-field-wrap {
+    width: 100%;
+    height: 52px;
+    flex: 1 1 auto;
+    padding: 0 12px;
+  }
+
+  .input-field-wrap input {
+    font-size: 16px;
+  }
+
+  .search-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
   .button-investigate,
   .button-surprise-wrap,
   .button-surprise {
     width: 100%;
+    height: 50px;
     flex: 1 1 auto;
   }
 
+  .button-surprise-wrap {
+    display: flex;
+    width: 100%;
+  }
+
+  .button-surprise {
+    width: 100%;
+    justify-content: center;
+  }
+
   .ghost-typing-layer {
-    right: 75px;
+    left: 40px;
+    right: 70px;
+  }
+
+  .ghost-code {
+    font-size: 15px;
   }
 
   .ghost-desc {
@@ -2651,9 +3193,9 @@ h1.hero-heading-editorial {
   }
 
   .ghost-tab-trigger {
-    height: 25px;
-    padding: 0 4px 0 7px;
-    gap: 5px;
+    height: 26px;
+    padding: 0 4px 0 6px;
+    gap: 4px;
   }
 
   .ghost-route-code {
@@ -2666,21 +3208,95 @@ h1.hero-heading-editorial {
     font-size: 9px;
   }
 
+  /* Empty State */
+  .empty-state-editorial {
+    padding: 24px 16px;
+    gap: 28px;
+    border-radius: 16px;
+  }
+
+  .empty-state-top {
+    gap: 20px;
+  }
+
+  .radar-visual {
+    width: 160px;
+    height: 160px;
+  }
+
+  .radar-c1 { width: 45px; height: 45px; }
+  .radar-c2 { width: 95px; height: 95px; }
+  .radar-c3 { width: 150px; height: 150px; }
+  .radar-sweep { width: 75px; height: 75px; }
+
+  .empty-copy h2 {
+    font-size: 22px;
+  }
+
+  .empty-copy p {
+    font-size: 14px;
+  }
+
   .journey-editorial-grid {
     grid-template-columns: 1fr;
+    padding-top: 20px;
+    gap: 12px;
   }
 
-  .details-editorial-grid {
-    grid-template-columns: 1fr;
+  .journey-step-card {
+    padding: 16px;
   }
 
-  .timeline-grid {
-    grid-template-columns: 1fr;
+  .journey-step-card h3 {
+    font-size: 15px;
+  }
+
+  .journey-step-card p {
+    font-size: 12.5px;
+  }
+
+  /* Feedback State (Loading / Error) */
+  .feedback-state {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    padding: 28px 16px;
+    gap: 16px;
+    border-radius: 16px;
+  }
+
+  .feedback-copy h2 {
+    font-size: 20px;
+  }
+
+  .feedback-copy p {
+    font-size: 14px;
+  }
+
+  .error-actions-row {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    align-items: center;
+    margin-top: 12px;
+  }
+
+  .error-action-button {
+    width: 100%;
+    padding: 10px 16px;
+  }
+
+  /* Flight Briefing Hero Card */
+  .flight-hero-card {
+    padding: 20px 16px;
+    border-radius: 16px;
   }
 
   .flight-hero-top {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
   }
 
   .flight-hero-actions {
@@ -2688,36 +3304,461 @@ h1.hero-heading-editorial {
     justify-content: space-between;
   }
 
-  .lifecycle-track {
-    flex-wrap: wrap;
+  .flight-code-oversized {
+    font-size: clamp(38px, 11vw, 56px);
+    word-break: break-all;
   }
 
-  .page-footer {
-    padding: 24px 0 20px;
-    margin-top: 32px;
+  .airline-name {
+    font-size: 18px;
+  }
+
+  .technical-code-badges {
+    gap: 6px;
+  }
+
+  .record-codes {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .lifecycle-wrapper {
+    padding-top: 14px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .lifecycle-track {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 270px;
+    flex-wrap: nowrap !important;
+  }
+
+  .track-connector {
+    flex: 1 1 20px;
+    min-width: 14px;
+  }
+
+  .track-node {
+    font-size: 10px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Lead Insight Card */
+  .lead-insight-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+    gap: 14px;
+  }
+
+  .insight-main-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .insight-icon-frame {
+    order: 1;
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .delay-tag {
+    order: 2;
+    margin-left: auto;
+    align-self: center;
+    font-size: 10px;
+    padding: 4px 10px;
+  }
+
+  .insight-copy {
+    order: 3;
+    width: 100%;
+  }
+
+  .insight-summary-title {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .insight-status-clarification {
+    font-size: 12px;
+  }
+
+  .delay-breakdown {
+    gap: 10px;
+    padding-top: 14px;
+  }
+
+  .delay-metric-cell {
+    padding: 10px 12px;
+  }
+
+  .delay-metric-cell dt {
+    font-size: 9.5px;
+  }
+
+  .delay-metric-cell dd {
+    font-size: 15px;
+    word-break: break-word;
+  }
+
+  /* Geodesic Route Card & Responsive Boarding Pass */
+  .geodesic-route-card {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+
+  .route-section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .route-mobile-corridor {
+    display: inline-block;
+  }
+
+  /* Dedicated Responsive Mobile Boarding Pass */
+  .mobile-boarding-pass {
+    margin-top: 14px;
+    background: linear-gradient(145deg, #101522 0%, #0d121c 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .boarding-pass-box {
+    display: none !important;
+  }
+
+  .mobile-pass-header {
+    padding: 14px 16px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .mobile-pass-airline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mobile-pass-logo-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(142, 197, 255, 0.12);
+    color: var(--acc, #8ec5ff);
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .mobile-pass-airline-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .mobile-pass-operator {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink, #fff);
+  }
+
+  .mobile-pass-flight-code {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    color: var(--dim, #7d8aa3);
+  }
+
+  .mobile-pass-status-pill {
+    font-size: 9.5px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(142, 197, 255, 0.1);
+    color: var(--acc, #8ec5ff);
+    border: 1px solid rgba(142, 197, 255, 0.2);
+  }
+
+  .mobile-pass-body {
+    padding: 18px 16px 14px;
+  }
+
+  .mobile-pass-route {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .mobile-pass-endpoint {
+    display: flex;
+    flex-direction: column;
+    min-width: 75px;
+  }
+
+  .mobile-pass-endpoint.end-right {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .mobile-pass-iata {
+    font-size: clamp(26px, 8.5vw, 36px);
+    font-weight: 800;
+    font-family: 'Editorial New', 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--ink, #fff);
+  }
+
+  .mobile-pass-city {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink, #fff);
+    opacity: 0.85;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    max-width: 105px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-pass-time {
+    font-size: 13px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    font-weight: 700;
+    color: var(--acc, #8ec5ff);
+    margin-top: 3px;
+  }
+
+  .mobile-pass-date {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    color: var(--dim, #7d8aa3);
+    margin-top: 2px;
+  }
+
+  .mobile-pass-corridor-flow {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 0 4px;
+    position: relative;
+  }
+
+  .mobile-pass-plane-icon {
+    font-size: 15px;
+    color: var(--acc, #8ec5ff);
+    display: inline-block;
+    line-height: 1;
+  }
+
+  .mobile-pass-line {
+    width: 100%;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--line, #2a3347) 0 4px, transparent 4px 8px);
+  }
+
+  .mobile-pass-nonstop-pill {
+    font-size: 8.5px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--dim, #7d8aa3);
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+  }
+
+  .mobile-pass-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+  }
+
+  .mobile-pass-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mobile-pass-label {
+    font-size: 9px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--dim, #7d8aa3);
+  }
+
+  .mobile-pass-val {
+    font-size: 13px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    font-weight: 700;
+    color: var(--ink, #fff);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-pass-val.accent {
+    color: var(--acc, #8ec5ff);
+  }
+
+
+  /* Timeline & Detail Sections */
+  .details-editorial-grid {
+    grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .timeline-section,
+  .detail-section {
+    padding: 20px 16px;
+    border-radius: 16px;
+    gap: 16px;
+  }
+
+  .timeline-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .timing-column {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .compact-details {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .spec-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+
+  .spec-item dd.mono-value {
+    font-size: 12.5px;
+    word-break: break-word;
+  }
+
+  /* Page Footer - Streamlined Mobile Architecture */
+  .page-footer {
+    padding: 20px 0 16px;
+    margin-top: 24px;
+    gap: 14px;
   }
 
   .footer-top {
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
+  }
+
+  .footer-brand {
+    gap: 4px;
+  }
+
+  .footer-brand-title {
+    font-size: 14px;
+  }
+
+  .footer-brand-desc {
+    font-size: 12px;
+    line-height: 1.4;
+    color: #94a3b8;
   }
 
   .footer-links {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 12px 16px;
     width: 100%;
+  }
+
+  .footer-col {
+    gap: 5px;
+  }
+
+  .footer-col-title {
+    font-size: 10.5px;
+    margin-bottom: 1px;
+  }
+
+  .footer-link {
+    font-size: 12.5px;
+    padding: 2px 0;
+  }
+
+  .footer-col-status {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  }
+
+  .footer-col-status .footer-col-title {
+    margin-bottom: 0;
+    color: #94a3b8;
+  }
+
+  .footer-col-status .footer-status-live {
+    font-size: 12px;
+    padding: 0;
   }
 
   .footer-bottom {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 5px;
+    padding-top: 12px;
+    font-size: 10.5px;
+    line-height: 1.35;
   }
 }
 
 @media (max-width: 480px) {
+  .mobile-pass-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
   .masthead {
     padding: 0;
   }
@@ -2729,50 +3770,53 @@ h1.hero-heading-editorial {
   .brand-mark {
     width: 26px;
     height: 26px;
-    font-size: 11px;
+    font-size: 10.5px;
   }
 
   .brand-text {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .masthead-nav {
-    gap: 6px;
+    gap: 4px;
   }
 
   .nav-link {
     font-size: 11px;
-    padding: 4px 6px;
+    padding: 4px 5px;
   }
 
   .nav-social-actions {
-    gap: 5px;
+    gap: 4px;
   }
 
   .nav-icon-btn,
   .nav-github-btn,
   .nav-linkedin-btn {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
   }
 
   .nav-icon-btn .github-icon,
   .nav-icon-btn .linkedin-icon,
   .nav-github-btn .github-icon,
   .nav-linkedin-btn .linkedin-icon {
-    width: 17px;
-    height: 17px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .ghost-tab-trigger .tactile-keycap {
+    display: none;
   }
 }
 
 @media (max-width: 360px) {
   .brand-text {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .nav-link {
-    font-size: 10px;
-    padding: 3px 4px;
+    display: none;
   }
 
   .nav-social-actions {
@@ -2793,17 +3837,210 @@ h1.hero-heading-editorial {
     width: 15px;
     height: 15px;
   }
+
+  .compact-details {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-links {
+    gap: 10px 10px;
+  }
+
+  .footer-link {
+    font-size: 11.5px;
+  }
+
+  .footer-github-link,
+  .footer-linkedin-link {
+    gap: 5px;
+  }
+
+  .footer-github-icon,
+  .footer-linkedin-icon {
+    width: 13px;
+    height: 13px;
+  }
+
+  .footer-bottom {
+    font-size: 10px;
+  }
+}
+
+/* Ultra-Narrow & Foldable Cover Screens (<= 340px, e.g. Galaxy Fold Cover 280px) */
+@media (max-width: 340px) {
+  .app-shell {
+    padding: 0 8px;
+  }
+
+  .masthead {
+    height: 52px;
+  }
+
+  .brand {
+    gap: 6px;
+  }
+
+  .brand-mark {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .brand-text {
+    font-size: 12px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .nav-social-actions {
+    gap: 3px;
+  }
+
+  .nav-icon-btn,
+  .nav-github-btn,
+  .nav-linkedin-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .search-hero.cinematic-hero {
+    padding: 18px 8px 16px;
+    gap: 16px;
+  }
+
+  h1.hero-heading-editorial {
+    font-size: clamp(26px, 8vw, 32px);
+  }
+
+  .ghost-typing-layer {
+    left: 36px;
+    right: 48px;
+  }
+
+  .mobile-pass-header {
+    padding: 10px 12px;
+  }
+
+  .mobile-pass-operator {
+    font-size: 11px;
+    max-width: 86px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-pass-status-pill {
+    font-size: 8.5px;
+    padding: 2px 6px;
+  }
+
+  .mobile-pass-body {
+    padding: 12px 10px;
+  }
+
+  .mobile-pass-endpoint .mobile-pass-city {
+    max-width: 68px;
+  }
+
+  .mobile-pass-corridor-flow {
+    padding: 0 2px;
+  }
+
+  .mobile-pass-plane-icon {
+    font-size: 11px;
+  }
+
+  .mobile-pass-nonstop-pill {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+
+  .mobile-pass-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .mobile-pass-label {
+    font-size: 8.5px;
+  }
+
+  .mobile-pass-val {
+    font-size: 11.5px;
+  }
+
+  .lifecycle-track {
+    min-width: 0 !important;
+    gap: 4px;
+  }
+
+  .track-connector {
+    min-width: 8px !important;
+  }
+
+  .track-node {
+    font-size: 9px;
+    gap: 4px;
+  }
+
+  .node-indicator {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+  }
+
+  .hud-compass-stage,
+  .hud-radar-stage {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .hud-compass-readout,
+  .hud-radar-readout {
+    align-items: center;
+    text-align: center;
+  }
+
+  .hud-profile-metrics-split {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .tape-scale-ticks span:nth-child(2),
+  .tape-scale-ticks span:nth-child(4) {
+    display: none;
+  }
+}
+
+/* Phablets & Foldables Unfolded / Landscape Mobile (481px - 640px) */
+@media (min-width: 481px) and (max-width: 640px) {
+  .mobile-boarding-pass {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .compact-details {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .hud-profile-metrics-split {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Tablet & Mid-size screens (641px - 1024px) */
 @media (min-width: 641px) and (max-width: 1024px) {
   .hero-aircraft-img {
-    object-position: 55% 40%;
+    object-position: 90% 50%;
   }
 
   .hero-beacon-strobe {
-    right: 46.5%;
-    top: 38.2%;
+    right: 7%;
+    top: 3.6%;
   }
 
   .hero-gradient-overlay {
@@ -2811,32 +4048,108 @@ h1.hero-heading-editorial {
       linear-gradient(90deg, #07090e 0%, rgba(7, 9, 14, 0.82) 28%, rgba(7, 9, 14, 0.28) 48%, transparent 68%),
       linear-gradient(180deg, transparent 72%, rgba(7, 9, 14, 0.75) 100%);
   }
+
+  /* 2-Column Balanced Cockpit HUD on Tablets */
+  .live-instruments-hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px;
+  }
+
+  .hud-radar-pod {
+    grid-column: 1 / -1 !important;
+  }
+
+  .hud-radar-stage {
+    flex-direction: row;
+    justify-content: center;
+    gap: 36px;
+  }
+
+  .compact-details.live-details {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px;
+  }
+
+  .details-editorial-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .mobile-boarding-pass {
+    max-width: 480px;
+    margin: 0 auto;
+  }
 }
 
-/* Large Displays & Ultra-Wide (1440px - 2560px+) */
+/* Large Displays & Desktop (1440px - 1919px) */
 @media (min-width: 1440px) {
   .search-hero.cinematic-hero {
     min-height: 560px;
   }
 
   .hero-aircraft-img {
-    object-position: 55% 42%;
+    object-position: 100% 50%;
+  }
+
+  .hero-beacon-strobe {
+    right: 6.5%;
+    top: 3.6%;
   }
 }
 
+/* Full HD & 2K Monitors (1920px - 2559px) */
 @media (min-width: 1920px) {
+  .app-shell {
+    max-width: 1600px;
+  }
+
   .search-hero.cinematic-hero {
     min-height: 590px;
   }
 
   .hero-aircraft-img {
-    object-position: 55% 42%;
+    object-position: 100% 50%;
+  }
+
+  .hero-beacon-strobe {
+    right: 6.5%;
+    top: 3.6%;
   }
 
   .hero-gradient-overlay {
     background:
       linear-gradient(90deg, #07090e 0%, rgba(7, 9, 14, 0.85) 20%, rgba(7, 9, 14, 0.25) 38%, transparent 55%),
       linear-gradient(180deg, transparent 72%, rgba(7, 9, 14, 0.75) 100%);
+  }
+
+  .live-instruments-hud {
+    gap: 24px;
+  }
+
+  .hud-instrument {
+    padding: 20px 24px;
+  }
+
+  /* Single continuous telemetry strip for all 7 cards at 1080p / 2K */
+  .compact-details.live-details {
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 14px;
+  }
+}
+
+/* Ultra-Wide & 4K Displays (>= 2560px) */
+@media (min-width: 2560px) {
+  .app-shell {
+    max-width: 1800px;
+  }
+
+  .search-hero.cinematic-hero {
+    min-height: 620px;
+  }
+
+  .compact-details.live-details {
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 16px;
   }
 }
 
