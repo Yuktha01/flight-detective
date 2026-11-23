@@ -1,9 +1,8 @@
 # Flight Detective
 
-Flight Detective is a full-stack flight lookup application. A user submits
-a flight number in the React frontend; the Express backend validates it,
-queries Aviationstack, maps the provider response to the application's
-response model, and returns a flight briefing to the frontend.
+Flight Detective is a full-stack, aviation-grade flight lookup and real-time tracking application. Users can investigate individual flights by flight number, explore popular flight corridors, or trigger live flight discovery with a single click. The browser interface renders an authentic glass-cockpit HUD, an interactive vintage boarding pass with realistic perforation tear simulation, and great-circle airspace visualizers.
+
+The Express backend validates requests, manages multi-tier LRU caching, queries the Aviationstack API, redacts sensitive secrets, categorizes delay insights, and returns domain-normalized flight data to the React frontend. It supports dual execution: local development via Node/Express and production serverless execution on AWS Lambda via a Lambda Function URL with a $0 out-of-pocket target.
 
 ## Repository layout
 
@@ -14,35 +13,113 @@ flight-detective/
 │   │   └── build-lambda-zip.js
 │   ├── src/
 │   │   ├── routes/
+│   │   │   ├── flightRoutes.test.ts
+│   │   │   └── flightRoutes.ts
 │   │   ├── services/
+│   │   │   ├── aviationstackService.test.ts
+│   │   │   ├── aviationstackService.ts
+│   │   │   ├── flightCache.test.ts
+│   │   │   ├── flightCache.ts
+│   │   │   ├── flightService.test.ts
+│   │   │   └── flightService.ts
 │   │   ├── types/
+│   │   │   ├── aviationstack.ts
+│   │   │   └── flight.ts
 │   │   ├── utils/
+│   │   │   ├── sanitize.test.ts
+│   │   │   └── sanitize.ts
+│   │   ├── app.test.ts
 │   │   ├── app.ts
+│   │   ├── config.test.ts
 │   │   ├── config.ts
+│   │   ├── index.ts
+│   │   ├── lambda.test.ts
 │   │   ├── lambda.ts
 │   │   └── server.ts
+│   ├── .env.example
 │   └── Dockerfile
 ├── frontend/
 │   ├── e2e/
+│   │   ├── flight-search.spec.ts
+│   │   └── mobile-layout.spec.ts
 │   ├── public/
+│   │   └── hero-aircraft.jpg
 │   └── src/
+│       ├── assets/
+│       │   └── hero-aircraft.jpg
 │       ├── components/
+│       │   ├── AirspaceCanvas.tsx
+│       │   ├── FlightDetails.test.tsx
+│       │   ├── FlightDetails.tsx
+│       │   ├── SearchForm.test.tsx
+│       │   └── SearchForm.tsx
 │       ├── services/
+│       │   ├── flightApi.test.ts
+│       │   └── flightApi.ts
 │       ├── test/
+│       │   └── setup.ts
 │       ├── types/
+│       │   └── flight.ts
+│       ├── App.css
+│       ├── App.test.tsx
 │       ├── App.tsx
+│       ├── index.css
 │       └── main.tsx
 └── docs/
+    ├── HLD.md
+    ├── LLD.md
+    ├── SYSTEM-DESIGN.md
+    ├── V1-OVERVIEW.md
+    └── V2-OVERVIEW.md
 ```
 
-The frontend uses React, TypeScript, and Vite. The backend uses Express and
-TypeScript. The backend has no database or persistent application storage.
+## Core Features & Architecture
+
+### Frontend & UI Architecture Specs
+
+The frontend is built with React 19, TypeScript, and Vite, implementing a retro-modern aviation aesthetic:
+
+- **Tactical Cockpit Glass HUD & Telemetry**:
+  - **Primary Flight Display (PFD)**: Artificial horizon attitude indicator showing pitch ladder and roll bank angle index.
+  - **Tactical Airspace Radar Scope**: 360-degree rotating radar sweep beam with 50NM and 100NM range rings, crosshairs, ADS-B transponder lock indicator, and real-time blip pulse animations.
+  - **Dual-Unit Telemetry Instruments**: Real-time conversions including Altitude (meters, Flight Level FL, and feet), Ground Speed (km/h, knots, and Mach number), Vertical Speed Indicator (climb/descent rates), Heading (compass degrees and 8-point cardinal rose), and Transponder WGS-84 position coordinates.
+- **Dual-View Flight Route**:
+  - **Interactive Vintage Boarding Pass**: Authentic retro airline boarding pass with an interactive perforated ticket stub. Features physics-based tear sound synthesis via Web Audio API, haptic feedback on mobile (`navigator.vibrate`), pointer grab/drag/tear physics on desktop, and swipe-down pull-to-tear gesture on mobile. Includes paper animations (paper airplane fly-away, crumple-and-roll, auto-dispense fresh ticket).
+  - **Great-Circle Geodesic Airspace Canvas**: Interactive HTML5 canvas (`AirspaceCanvas.tsx`) rendering curved great-circle flight paths, origin/destination airport waypoints, animated aircraft blip, and day/night contrast.
+- **Search Experience & Real Flight Discovery**:
+  - **Live Flight Discovery ("Surprise Me")**: One-click discovery querying active airborne flights from Aviationstack with random sampling and error handling.
+  - **Popular Corridor Suggestions**: Quick-select pills for high-traffic corridors (e.g., JFK→LHR, SFO→HND, LAX→NRT) with real-time ghost corridor hint and Tab-key auto-fill completion.
+  - **Validation & Cache Refresh**: Client-side regex format validation (`^[A-Z][A-Z0-9]{1,2}\d{1,4}$`), uppercase transformation, and one-click cache-bypass refresh button (`?refresh=true`).
+- **Masthead Navigation & Aviation Design System**:
+  - Scroll-aware smart sticky masthead (auto-hides on downward scroll past threshold, reveals on upward scroll, with direct anchor navigation to search and briefing sections).
+  - High-contrast aviation typography and CSS design tokens (`--bg-primary`, `--accent-sky`, `--cockpit-amber`, `--amber-radar`, `--pfd-sky`, `--pfd-ground`).
+  - Responsive multi-column footer with quick navigation, corridor references, and social links.
+  - Mobile-first responsiveness and reduced-motion accessibility (`prefers-reduced-motion`).
+
+### Backend Architecture Specs
+
+The backend is built with Node.js, Express, and TypeScript, engineered for high resilience, zero secrets leakage, and cost-free serverless operation:
+
+- **Dual Execution Runtime**: Runs as a standard Express HTTP server (`src/server.ts`) for local development or as a serverless AWS Lambda Event Function via `@codegenie/serverless-express` (`src/lambda.ts`) fronted by an AWS Lambda Function URL ($0 out-of-pocket target).
+- **Zero-Dependency Fast esbuild Bundling**: Custom bundling script (`backend/scripts/build-lambda-zip.js`) compiling TypeScript into a single self-contained `lambda.js` file (~290 KB zip) with zero runtime `node_modules` dependencies.
+- **Multi-Tier In-Memory LRU Cache (`FlightCache`)**:
+  - Successful flight lookups cached for 120 seconds.
+  - 404 Not Found responses cached for 60 seconds (protecting upstream quota against repeated invalid lookups).
+  - Flight discovery pools cached for 60 seconds.
+  - Direct cache bypass support via `?refresh=true` query parameter.
+- **Security, Rate Limiting & Key Redaction**:
+  - In-memory rate limiting via `express-rate-limit` (default: 30 requests/minute per container).
+  - Strict CORS handling configured solely in Express (`ALLOWED_ORIGINS`, `FRONTEND_URL`).
+  - Consolidated API key sanitization (`src/utils/sanitize.ts`) that intercepts all logs and error objects to guarantee Aviationstack access keys and secret query parameters are never leaked.
+- **Domain Normalization & Delay Categorization**:
+  - Strict provider mapping to application statuses (`scheduled`, `in_flight`, `landed`, `cancelled`, `incident`, `diverted`).
+  - Derived delay insights (`on_time`, `minor_delay`, `delayed`, `significant_delay`).
 
 ## Run locally
 
 Use separate terminals.
 
-Backend:
+### Backend
 
 ```powershell
 cd backend
@@ -56,7 +133,7 @@ Create `backend/.env` using `backend/.env.example` as a template, then set
 npm run dev
 ```
 
-Frontend:
+### Frontend
 
 ```powershell
 cd frontend
@@ -71,16 +148,24 @@ origin; it is a frontend build-time value and must not contain secrets.
 ## API
 
 - `GET /api/health` reports whether the backend process is responding.
-- `GET /api/flights/:flightNumber` returns a transformed flight record.
-- `GET /api/flights/discover` returns a bounded list of real flights for discovery.
+- `GET /api/flights/:flightNumber` returns a transformed flight record. Supports optional `?refresh=true` to bypass cache.
+- `GET /api/flights/discover` returns a bounded list of real airborne flights for discovery. Supports optional `?refresh=true`.
 
 Flight numbers are uppercased and validated on both frontend and backend
-with `^[A-Z][A-Z0-9]{1,2}\d{1,4}$`. The flight lookup returns:
+with `^[A-Z][A-Z0-9]{1,2}\d{1,4}$`.
 
-- `400 INVALID_FLIGHT_NUMBER` for invalid input
-- `404 FLIGHT_NOT_FOUND` if the provider returns no flight record
-- `500 FLIGHT_DATA_UNAVAILABLE` if the provider request or backend handling
-  fails
+### HTTP Error Contract
+
+| HTTP Status | Error Code | Meaning |
+|---|---|---|
+| `400` | `INVALID_FLIGHT_NUMBER` | Flight number parameter does not match the accepted format |
+| `403` | `CORS_FORBIDDEN` | Origin is not in the allowed CORS origins list |
+| `404` | `FLIGHT_NOT_FOUND` | Upstream provider returned no matching flight records |
+| `429` | `RATE_LIMIT_EXCEEDED` | Client exceeded maximum allowed search requests per window |
+| `500` | `FLIGHT_DATA_UNAVAILABLE` | Provider authentication failure or unhandled exception |
+| `502` | `PROVIDER_ERROR` | Upstream network failure, connection refused, or malformed provider response |
+| `503` | `PROVIDER_QUOTA_EXCEEDED` | Upstream provider monthly API quota or rate limit exceeded |
+| `504` | `UPSTREAM_TIMEOUT` | Upstream provider request exceeded 8-second timeout |
 
 The backend owns the Aviationstack credential. The browser only calls the
 Flight Detective API.
@@ -88,22 +173,22 @@ Flight Detective API.
 ## Tests and build
 
 ```powershell
-# Backend
+# Backend (103 unit, route, service, cache, sanitizer, and Lambda handler tests)
 cd backend
 npm test
 npm run build
 npm run build:lambda
 
-# Frontend
+# Frontend (38 unit tests, linting, build, and Playwright E2E tests)
 cd frontend
 npm test
-npm run test:e2e
 npm run lint
 npm run build
+npm run test:e2e
 ```
 
 Backend tests use Vitest and Supertest. Frontend unit tests use Vitest and
-React Testing Library; browser tests use Playwright.
+React Testing Library; browser E2E tests use Playwright covering both desktop and mobile layouts.
 
 ## AWS Lambda Deployment (Target $0 Out-of-Pocket)
 
@@ -171,12 +256,15 @@ The container runs the compiled backend on port `3000`; the Aviationstack
 key is provided at runtime rather than baked into the image. There is no
 frontend Dockerfile or Compose configuration in this repository.
 
-## Documentation
+## Documentation & Architecture Specifications
 
-- [V1 overview](docs/V1-OVERVIEW.md)
-- [High-level design](docs/HLD.md)
-- [Low-level design](docs/LLD.md)
-- [System design](docs/SYSTEM-DESIGN.md)
+Detailed architecture and design specifications are maintained in the [`docs/`](docs/) directory:
+
+- [V1 Overview](docs/V1-OVERVIEW.md) — Baseline product requirements, initial user journey, flight number rules, and data mapping principles.
+- [V2 Overview](docs/V2-OVERVIEW.md) — Comprehensive V2 specifications: glass-cockpit HUD, vintage boarding pass tear physics, airspace canvas, live flight discovery, multi-tier caching, and zero-cost serverless Lambda architecture.
+- [High-Level Design (HLD)](docs/HLD.md) — System boundaries, component topology, sequence diagrams, and deployment architecture.
+- [Low-Level Design (LLD)](docs/LLD.md) — Module architecture, frontend and backend implementation specs, test specifications, and Lambda execution details.
+- [System Design](docs/SYSTEM-DESIGN.md) — Architectural patterns, request flows, failure modes, trust boundaries, and zero-cost serverless trade-offs.
 
 ## Deployment architecture
 

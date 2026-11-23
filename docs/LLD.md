@@ -5,13 +5,18 @@
 ```text
 frontend/
 ├── e2e/
-│   └── flight-search.spec.ts
+│   ├── flight-search.spec.ts
+│   └── mobile-layout.spec.ts
 ├── public/
+│   └── hero-aircraft.jpg
 ├── src/
 │   ├── assets/
+│   │   └── hero-aircraft.jpg
 │   ├── components/
 │   │   ├── AirspaceCanvas.tsx
+│   │   ├── FlightDetails.test.tsx
 │   │   ├── FlightDetails.tsx
+│   │   ├── SearchForm.test.tsx
 │   │   └── SearchForm.tsx
 │   ├── services/
 │   │   ├── flightApi.ts
@@ -26,6 +31,8 @@ frontend/
 │   ├── index.css
 │   └── main.tsx
 ├── playwright.config.ts
+├── tsconfig.json
+├── tsconfig.node.json
 └── vite.config.ts
 
 backend/
@@ -45,6 +52,10 @@ backend/
 │   ├── types/
 │   │   ├── aviationstack.ts
 │   │   └── flight.ts
+│   ├── utils/
+│   │   ├── sanitize.test.ts
+│   │   └── sanitize.ts
+│   ├── app.test.ts
 │   ├── app.ts
 │   ├── config.test.ts
 │   ├── config.ts
@@ -54,9 +65,16 @@ backend/
 │   └── server.ts
 ├── .env.example
 └── Dockerfile
+
+docs/
+├── HLD.md
+├── LLD.md
+├── SYSTEM-DESIGN.md
+├── V1-OVERVIEW.md
+└── V2-OVERVIEW.md
 ```
 
-## 2. Frontend modules
+## 2. Frontend modules & UI Architecture
 
 ### `src/main.tsx`
 
@@ -65,44 +83,71 @@ renders `App`.
 
 ### `src/App.tsx`
 
-Owns the controlled flight-number value and a discriminated search state:
-initial, loading, success, not-found, invalid, or generic error. It
-normalizes and validates the submitted input before calling the API
-service.
+The root application controller and state orchestrator:
+- Manages the discriminated search state (`initial`, `loading`, `success`, `not_found`, `invalid_input`, `unavailable`).
+- Drives the smart sticky masthead navigation with directional scroll detection (auto-hides on downward scroll $> 8\text{px}$ past threshold, smoothly reveals on upward scroll $\ge 12\text{px}$).
+- Provides quick anchor navigation to the search input (`#search-section`) and flight briefing (`#results-section`).
+- Handles popular corridor selection pills and triggers immediate investigations.
+- Orchestrates the "Surprise Me" real-flight discovery flow by calling `flightApi.getDiscoveredFlights()`.
+- Supports manual cache-bypass refreshes via `?refresh=true`.
 
 ### `src/components/SearchForm.tsx`
 
-Renders the labeled text input and submit button. It reports input changes
-and form submission through props and displays validation feedback supplied
-by `App`.
-
-### `src/services/flightApi.ts`
-
-Constructs the API URL using `VITE_API_BASE_URL` (empty by default), calls
-`fetch`, parses JSON, and throws `FlightApiError` for non-success HTTP
-responses. The URL path is `/api/flights/:flightNumber`; the path value is
-URL-encoded.
+Interactive search form module:
+- Renders the labeled text input, submit button, and "Surprise Me" action button.
+- **Popular Corridors**: Displays quick-action pills for prominent flight corridors (e.g., JFK→LHR, SFO→HND, LAX→NRT).
+- **Ghost Corridor Hint & Tab Auto-Fill**: Inspects user input in real-time, displays an inline matching ghost text suggestion, and auto-completes on <kbd>Tab</kbd> keypress.
+- **Client-Side Validation**: Validates flight codes against `^[A-Z][A-Z0-9]{1,2}\d{1,4}$`, providing immediate feedback for invalid entries.
 
 ### `src/components/FlightDetails.tsx`
 
-Renders summary/status, departure and arrival route, scheduled/estimated/
-actual times, delay insight, aircraft fields, and optional live-position
-fields. It formats timestamps using the browser locale and timezone.
+The primary flight briefing interface, composed of two core sections:
+
+1. **Interactive Route Section**:
+   - **Vintage Boarding Pass View**: Skeuomorphic retro boarding pass featuring an interactive perforated ticket stub (`.ticket-perf-divider`).
+     - *Desktop Physics*: Supports pointer grab, drag, and tear physics with real-time rotation and velocity.
+     - *Mobile Drag Gesture*: Pointer capture listener tracking vertical drag (`mobileDragY`). Swiping down $\ge 20\text{px}$ cleanly detaches the stub.
+     - *Procedural Audio Rip Synthesis*: Uses Web Audio API oscillator and noise buffer bursts to generate realistic paper tearing sounds without external media files.
+     - *Haptic Vibration*: Emits a $25\text{ms}$ vibration pulse via `navigator.vibrate` when torn on supported devices.
+     - *Paper Actions*: Allows folding detached stubs into paper airplanes that fly away, crumpling them into paper balls that roll off-screen, or auto-dispensing fresh replacement tickets.
+   - **View Toggle**: Switches between the Vintage Boarding Pass and the Great-Circle Geodesic Airspace Canvas (`AirspaceCanvas.tsx`).
+
+2. **Tactical Cockpit Glass HUD & Telemetry**:
+   - **Primary Flight Display (PFD)**: Attitude director indicator with artificial horizon sky/ground division (`--pfd-sky`, `--pfd-ground`), pitch ladder markings ($\pm 10^\circ, \pm 20^\circ$), and roll bank angle index.
+   - **Tactical Airspace Radar Scope**: 360-degree rotating radar sweep arm with radial sweep gradient, 50NM/100NM concentric range rings, crosshairs, and live pulsating ADS-B blips.
+   - **Dual-Unit Telemetry Instruments**:
+     - *Altitude*: Displays meters, Flight Level (FL), and feet.
+     - *Ground Speed*: Displays km/h, knots, and Mach number.
+     - *Vertical Speed*: Displays climb/descent rate and status label (`Climbing`, `Level Flight`, `Descending`).
+     - *Heading*: Displays degrees and 8-point cardinal rose (`ENE`, `SW`, etc.).
+     - *Coordinates*: Displays decimal degrees and formatted DMS hemisphere transponder fix (`40°38'N 73°46'W`).
+
+### `src/components/AirspaceCanvas.tsx`
+
+High-performance HTML5 2D Canvas component rendering great-circle geodesic flight routes:
+- Calculates spherical interpolation between origin and destination coordinates.
+- Renders smooth geodesic Bezier curves with neon trail gradients.
+- Animates real-time aircraft marker progression along the flight corridor.
+
+### `src/services/flightApi.ts`
+
+Constructs API URLs using `VITE_API_BASE_URL` (empty by default for relative proxying), performs native `fetch` calls, parses JSON responses, and maps errors into typed `FlightApiError` instances:
+- `getFlight(flightNumber, refresh?)`: Calls `/api/flights/:flightNumber`.
+- `getDiscoveredFlights(refresh?)`: Calls `/api/flights/discover`.
 
 ### `src/types/flight.ts`
 
-Defines the frontend copy of the application response and error response
-types.
+Frontend domain models mirroring the backend contract: `FlightResponse`, `DiscoveryResponse`, `DiscoveredFlight`, `FlightStatus`, `DelayStatus`, and error shapes.
 
 ## 3. Frontend flow and states
 
 ```text
-SearchForm
+SearchForm / Corridor Pill / Surprise Me
   → App validates and normalizes
-  → flightApi.getFlight()
-  → GET /api/flights/:flightNumber
+  → flightApi.getFlight() / getDiscoveredFlights()
+  → GET /api/flights/:flightNumber(?refresh=true)
   → FlightResponse
-  → FlightDetails
+  → FlightDetails (Boarding Pass / Geodesic Canvas + Cockpit HUD)
 ```
 
 The frontend validates with `^[A-Z][A-Z0-9]{1,2}\d{1,4}$`. The input and
@@ -133,17 +178,20 @@ flight search rate limiter, and adds the `/api/health` endpoint.
 ### `src/routes/flightRoutes.ts`
 
 Defines:
-- `GET /api/flights/discover`: Returns a bounded list of real flights.
+- `GET /api/flights/discover`: Returns a bounded list of real airborne flights.
 - `GET /api/flights/:flightNumber`: Investigates and returns flight data.
 
 Supports `?refresh=true` to bypass the in-memory cache. All error loggers sanitize
-and redact secret keys.
+and redact secret keys using `sanitize.ts`.
 
 ### `src/services/flightCache.ts`
 
-In-memory LRU cache (`FlightCache`) storing successful flight responses (TTL: 120s),
-404 not-found outcomes (TTL: 60s), and discovery flights (TTL: 60s) to protect
-Aviationstack quota.
+In-memory LRU cache (`FlightCache`) storing:
+- Successful flight responses (TTL: 120s)
+- 404 not-found outcomes (TTL: 60s)
+- Discovery flight pools (TTL: 60s)
+
+This protects upstream Aviationstack quota while supporting explicit cache bypass via `?refresh=true`.
 
 ### `src/services/flightService.ts`
 
@@ -157,6 +205,10 @@ Reads `AVIATIONSTACK_API_KEY` from environment variables, makes a native `fetch`
 request to `https://api.apilayer.net/aviationstack/v1/flights`, and handles errors
 with custom typed exception classes. Sanitizes error messages to ensure credentials
 or secret-bearing URLs cannot be leaked.
+
+### `src/utils/sanitize.ts`
+
+Utility functions that intercept strings and errors to redact API keys and query parameters matching `access_key=[^&]+`.
 
 ### `src/config.ts`
 
@@ -221,38 +273,44 @@ Insight is based on departure delay:
 | `PORT` | Backend (Local) | Listening port for `server.ts`; defaults to `3000`. |
 | `VITE_API_BASE_URL` | Frontend | Optional API origin; when empty, the request path is relative `/api/...`. |
 
-## 8. Lambda execution environment characteristics & limitations
+## 8. Lambda execution characteristics & architectural considerations
 
 - **Stateless & Ephemeral**: Lambda execution containers spin up on demand and shut down after idle periods. Cold starts incur a slight execution delay (~200–500ms).
 - **In-Memory Cache Scope**: `FlightCache` is held in container memory. Warm invocations hitting the same microVM share the cache. Concurrent requests on separate microVMs maintain independent caches. Cold starts begin with empty caches.
 - **In-Memory Rate Limiting Scope**: `express-rate-limit` maintains counters in memory per container. In multi-instance concurrent bursts, each container enforces its own counter.
 - **Reserved Concurrency**: If AWS Reserved Concurrency is configured on the Lambda function, it sets an upper limit on the number of concurrently executing Lambda instances (microVMs), not requests per minute, and must not be treated as a global rate limiter. Invocations arriving when all reserved environments are busy receive HTTP 429.
 - **CORS Configuration**: Express is the sole CORS handler. Lambda Function URL CORS must remain unconfigured (None) in AWS to prevent duplicate headers.
-- **Architecture**: Production dependencies are pure JavaScript without native C/C++ addons, suggesting architecture independence; however, actual execution on ARM64 Graviton2 requires verification in an AWS ARM64 environment.
+- **Architecture**: The bundled deployment package is pure JavaScript with zero native C/C++ addons, providing architecture independence across both ARM64 (AWS Graviton) and x86_64.
 - **Timeout Configuration**: The Lambda function must be configured with a 15-second timeout. The upstream Aviationstack provider fetch timeout remains 8 seconds (via `AbortSignal.timeout(8000)`).
 - **Cost Isolation**: In keeping with the $0 target constraint, external caching or state layers (such as Redis/ElastiCache or DynamoDB) are deliberately not used.
 
 ## 9. Tests
 
-- Backend Lambda handler tests: `backend/src/lambda.test.ts`
-  - Validates Lambda Function URL (Payload v2) event parsing, GET, OPTIONS preflight, CORS headers, query parameters (`?refresh=true`), and response status codes.
-- Backend route tests: `backend/src/routes/flightRoutes.test.ts`
-  - Covers valid and invalid inputs, not found, discovery, caching, rate limiting, and provider error mappings.
-- Backend cache tests: `backend/src/services/flightCache.test.ts`
-  - Validates LRU eviction, TTL expiry, deletion, and retrieval.
-- Backend service tests: `backend/src/services/flightService.test.ts`
-  - Covers delay categories and summaries, transformations, both airline shapes, and missing flight results.
-- Backend config tests: `backend/src/config.test.ts`
-  - Validates environment parsing and defaults.
-- Frontend tests: `frontend/src/App.test.tsx`, `frontend/src/components/SearchForm.test.tsx`, `frontend/src/services/flightApi.test.ts`.
-- Playwright E2E tests: `frontend/e2e/flight-search.spec.ts`.
+### Backend Tests (103 Tests)
+- `backend/src/lambda.test.ts`: Lambda Function URL (Payload v2) event parsing, GET, OPTIONS preflight, CORS headers, query parameters (`?refresh=true`), and response status codes.
+- `backend/src/routes/flightRoutes.test.ts`: Valid/invalid inputs, not found, discovery, caching, rate limiting, and provider error mappings.
+- `backend/src/services/flightCache.test.ts`: LRU eviction, TTL expiry, deletion, and retrieval.
+- `backend/src/services/flightService.test.ts`: Delay categories and summaries, transformations, both airline shapes, and missing flight results.
+- `backend/src/services/aviationstackService.test.ts`: Upstream error handling, authentication, network failures, and timeout enforcement.
+- `backend/src/utils/sanitize.test.ts`: API key sanitization and error log protection.
+- `backend/src/config.test.ts`: Environment parsing, defaults, and invalid configuration rejections.
+- `backend/src/app.test.ts`: CORS headers, health checks, and global error handling.
+
+### Frontend Tests (38 Tests)
+- `frontend/src/App.test.tsx`: Search lifecycle, empty states, Surprise Me flow, corridor clicks, and cache bypass.
+- `frontend/src/components/FlightDetails.test.tsx`: Boarding pass rendering, perforation tear physics, keyboard tear, airplane and crumple animations.
+- `frontend/src/components/SearchForm.test.tsx`: Input validation, form submission, and corridor interactions.
+- `frontend/src/services/flightApi.test.ts`: URL construction, query parameters, and error mapping.
+
+### Playwright E2E Tests
+- `frontend/e2e/flight-search.spec.ts`: Desktop search, loading states, flight briefing rendering, and error flows.
+- `frontend/e2e/mobile-layout.spec.ts`: Mobile viewport layout, mobile ticket tear swipe gestures, and responsive masthead behavior.
 
 ## 10. Lambda packaging script
 
 `backend/scripts/build-lambda-zip.js`:
-- Compiles TypeScript to `backend/dist/`.
-- Sets up a staging directory with `dist/` and root shims (`index.js`, `lambda.js`), safely excluding archive files.
-- Installs clean production dependencies with `npm install --omit=dev`.
-- Archives the package into `backend/flight-detective-lambda.zip` (~1.1 MB).
+- Bundles the TypeScript backend using `esbuild` into a single, self-contained `dist/lambda.js` file with zero runtime `node_modules` dependencies.
+- Sets up a clean staging directory with the bundled handler and root shims (`index.js`, `lambda.js`).
+- Archives the package into `backend/flight-detective-lambda.zip` (~290 KB).
 - Run with `npm run build:lambda` or `npm run package`.
-- Target runtime: `Node.js 22.x`.
+- Target runtime: `Node.js 22.x` on `arm64` or `x86_64`.

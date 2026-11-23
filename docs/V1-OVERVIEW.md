@@ -2,32 +2,26 @@
 
 ## Purpose
 
-Flight Detective lets a user look up one flight by flight number and read
-its status, route, schedule, delay information, and any aircraft or live
-position data supplied by the provider.
+Flight Detective V1 was designed as a lightweight full-stack flight lookup utility. It allows a user to look up a single flight by its IATA/ICAO flight number and view its basic status, route, schedule, delay summary, and any aircraft or live position data provided by the upstream provider.
 
-## Implemented user flow
+## Implemented User Flow (V1 Baseline)
 
-1. The user enters a flight number in the React frontend.
+1. The user manually enters a flight number in the React frontend.
 2. The frontend trims and uppercases the value, then validates its format.
-3. The frontend calls the Flight Detective backend.
-4. The backend validates the route parameter and requests the flight from
-   Aviationstack.
-5. The backend converts the first returned provider record into the
-   application response model and derives a delay summary.
-6. The frontend renders the response or displays an appropriate error
-   state.
+3. The frontend sends an HTTP request to the Express backend.
+4. The backend validates the route parameter and queries the Aviationstack API.
+5. The backend converts the first returned provider record into the application response model and derives a delay summary.
+6. The frontend renders the response cards or displays an error state.
 
-## Technology
+## Technology Stack (V1 Baseline)
 
-- Frontend: React, TypeScript, Vite
-- Backend: Node.js, Express, TypeScript
-- External data provider: Aviationstack
-- Unit/integration testing: Vitest; frontend tests use React Testing Library,
-  backend route tests use Supertest
-- Browser testing: Playwright
+- **Frontend**: React, TypeScript, Vite
+- **Backend**: Node.js, Express, TypeScript
+- **External Data Provider**: Aviationstack API
+- **Testing**: Vitest, React Testing Library, Supertest, Playwright
+- **Deployment**: AWS ECS Fargate container deployment
 
-## Flight number format
+## Flight Number Format
 
 Both frontend and backend validate using:
 
@@ -35,64 +29,42 @@ Both frontend and backend validate using:
 ^[A-Z][A-Z0-9]{1,2}\d{1,4}$
 ```
 
-The frontend normalizes input to uppercase before submission. The backend
-also uppercases the parameter before validating and querying the provider.
+The frontend normalizes input to uppercase before submission. The backend also uppercases the parameter before validating and querying the provider.
 
-## API routes
+## API Routes (V1 Baseline)
 
 ### `GET /api/health`
-
-Returns a JSON status and message indicating the backend is running. It
-reports process responsiveness; it does not check the Aviationstack
-connection.
+Returns a JSON status and message indicating the backend process is running. Reports process responsiveness without checking the upstream Aviationstack connection.
 
 ### `GET /api/flights/:flightNumber`
+Looks up a flight by flight number and returns the application `FlightResponse` object.
 
-Looks up a flight by its flight number and returns the application
-`FlightResponse` object.
+## Provider and Transformation
 
-## Provider and transformation
+The backend sends `access_key` and `flight_iata` query parameters to the Aviationstack flights endpoint. It uses only the first record in the provider response `data` array.
 
-The backend sends `access_key` and `flight_iata` query parameters to the
-Aviationstack flights endpoint. It uses only the first record in the
-provider response's `data` array. No record results in a not-found response.
+Status values are mapped to application domain statuses (`scheduled`, `in_flight`, `landed`, `cancelled`, `incident`, `diverted`). Departure delay categories are derived as follows:
 
-The application maps provider status values into application status values,
-normalizes full or compact airline objects, converts missing delay values
-to zero, and derives a delay category and summary. Aircraft and live
-position fields remain `null` if the provider does not include those
-objects.
-
-Delay categories are derived from departure delay:
-
-| Departure delay | Category |
-| --- | --- |
-| `0` | `on_time` |
+| Departure Delay (minutes) | Category |
+|---|---|
+| `0` (or `null`) | `on_time` |
 | `1–14` | `minor_delay` |
 | `15–59` | `delayed` |
 | `60+` | `significant_delay` |
 
-The implementation treats a missing (`null`) delay as zero. The category
-therefore reflects that mapping; it does not independently verify that the
-flight is on time.
+## Error Responses (V1 Baseline)
 
-## Error responses
-
-| HTTP status | Error code | Meaning |
-| --- | --- | --- |
-| `400` | `INVALID_FLIGHT_NUMBER` | The path parameter does not match the accepted format. |
-| `404` | `FLIGHT_NOT_FOUND` | Aviationstack returned no flight record. |
+| HTTP Status | Error Code | Meaning |
+|---|---|---|
+| `400` | `INVALID_FLIGHT_NUMBER` | The flight number parameter does not match the accepted format. |
+| `404` | `FLIGHT_NOT_FOUND` | Aviationstack returned no matching flight records. |
 | `500` | `FLIGHT_DATA_UNAVAILABLE` | Provider request or backend processing failed. |
 
-## Persistence and scope
+## Persistence and Scope (V1 Baseline)
 
-The backend performs synchronous lookups and does not store flight data.
-There is no database, cache, authentication system, queue, or background
-worker in the repository implementation.
+In the V1 baseline, the backend performed synchronous lookups without local caching, discovery endpoints, rate limiting, or serverless adapters.
 
-## Deployment architecture
+---
 
-The application can be deployed using AWS services such as S3, CloudFront,
-ECR, ECS, and Secrets Manager. These deployment resources are managed
-outside this repository and are not represented as infrastructure-as-code
-here.
+> [!NOTE]
+> For the modern, production-grade architecture featuring the glass-cockpit HUD, interactive vintage boarding pass with perforation tear physics, Great-Circle geodesic route visualizer, real flight discovery engine, multi-tier LRU caching, and zero-cost AWS Lambda Function URL serverless architecture, see [V2 Overview](V2-OVERVIEW.md).

@@ -32,10 +32,16 @@ flowchart LR
 
 ### Frontend
 
-The Vite-built React application collects the flight number, maintains
-search/loading/result/error state, calls the backend API, and renders the
-flight response. The frontend source types describe the application API
-response.
+The Vite-built React 19 application collects flight numbers, maintains
+search/loading/result/error state, calls the backend API, and renders an
+aviation-grade interface:
+- **SearchForm**: Flight number validation, popular corridor suggestion pills, inline ghost corridor hint with Tab auto-fill, and "Surprise Me" real-flight discovery.
+- **FlightDetails**:
+  - **Vintage Boarding Pass**: Skeuomorphic boarding pass with an interactive perforated ticket stub, procedural audio rip synthesis via Web Audio API, pointer grab/throw physics on desktop, and swipe-down tear gesture with haptic vibration on mobile.
+  - **Tactical Cockpit Glass HUD**: Primary Flight Display (PFD) with artificial horizon pitch & roll attitude director, 360-degree tactical airspace radar scope with rotating sweep and ADS-B transponder lock, and dual-unit telemetry instrument cards (m / FL / ft, km/h / knots / Mach, VSI climb/descent, 8-point compass heading, formatted coordinate fix).
+  - **AirspaceCanvas**: Interactive HTML5 2D Canvas great-circle geodesic route visualizer with animated aircraft progression.
+- **Navigation**: Scroll-aware sticky masthead navigation and responsive multi-column aviation footer.
+The frontend source types describe the application API response.
 
 ### Express application
 
@@ -143,7 +149,7 @@ optional API origin. During development, the Vite server proxies `/api` to
 `http://localhost:3000`.
 
 ### AWS Lambda runtime
-- **Runtime**: `Node.js 22.x` on `arm64` or `x86_64`. (Note: The absence of native binaries in production dependencies suggests architecture independence, but actual execution on ARM64 must be verified in an AWS Graviton environment).
+- **Runtime**: `Node.js 22.x` on `arm64` or `x86_64`. The bundled deployment package is pure JavaScript with zero native C/C++ addons, providing architecture independence across both ARM64 (AWS Graviton) and x86_64.
 - **Invocation**: Standard AWS Lambda Event Function via Lambda Function URL (Payload format 2.0).
 - **CORS Handling**: Lambda Function URL CORS must remain unconfigured (set to None). Express is the sole CORS handler to prevent duplicate headers.
 - **Timeout**: The Lambda function must be configured with a 15-second timeout. Upstream Aviationstack provider fetch timeout remains 8 seconds.

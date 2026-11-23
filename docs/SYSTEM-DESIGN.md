@@ -121,15 +121,17 @@ logged or included in responses.
 - **Reserved Concurrency**: If AWS Reserved Concurrency is configured on the Lambda function, it sets an upper limit on the number of concurrently executing Lambda instances (microVMs), not requests per minute, and must not be treated as a global rate limiter. Invocations arriving when all reserved environments are busy receive HTTP 429.
 - **CORS Handling**: Lambda Function URL CORS must remain unconfigured (set to None) in AWS. Express is the sole CORS handler to avoid duplicate headers.
 - **Timeout Configuration**: The Lambda function must be configured with a 15-second timeout. Upstream Aviationstack provider fetch timeout remains 8 seconds (via `AbortSignal.timeout(8000)`).
-- **Architecture**: Production dependencies are pure JavaScript without native C/C++ addons, suggesting architecture independence; however, actual execution on ARM64 Graviton2 requires verification in an AWS ARM64 environment.
+- **Architecture**: The bundled deployment package is pure JavaScript with zero native C/C++ addons, providing architecture independence across both ARM64 (AWS Graviton) and x86_64.
 - **Cold Starts**: Initial invocations after an idle period take ~200–500ms to spin up the Node.js container; warm invocations execute within milliseconds.
 
 ## 8. Deployment architecture
 
-The backend is built into a self-contained ZIP archive (~1.1 MB) using:
+The backend is built into a self-contained ZIP archive (~290 KB) using:
 
 ```powershell
 npm run build:lambda
+# or
+npm run package
 ```
 
-The ZIP package contains compiled JavaScript in `dist/`, root shims (`index.js`, `lambda.js`), and production `node_modules/` at `backend/flight-detective-lambda.zip`. It deploys to an AWS Lambda function (`Node.js 22.x`, arm64 or x86_64) equipped with a Lambda Function URL with auth type `NONE`.
+The ZIP package contains a single, self-contained `lambda.js` file bundled with `esbuild` (zero `node_modules` dependencies) and root shims at `backend/flight-detective-lambda.zip`. It deploys to an AWS Lambda function (`Node.js 22.x`, arm64 or x86_64) equipped with a Lambda Function URL with auth type `NONE`.
