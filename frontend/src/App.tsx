@@ -56,13 +56,13 @@ function App() {
       } else {
         masthead.classList.add('nav-scrolled')
 
-        if (delta > 4) {
+        if (delta > 8) {
           accumulatedUp = 0
           if (!isHidden && currentScrollY > threshold) {
             masthead.classList.add('nav-hidden')
             isHidden = true
           }
-        } else if (delta < -4) {
+        } else if (delta < -8) {
           accumulatedUp += Math.abs(delta)
           if (isHidden && accumulatedUp >= upTolerance) {
             masthead.classList.remove('nav-hidden')
@@ -217,13 +217,14 @@ function App() {
           </a>
           <a
             href="#results-section"
-            className="nav-link"
+            className="nav-link nav-link-briefing"
             onClick={(e) => {
               e.preventDefault()
               document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' })
             }}
           >
-            <span>Flight Briefing</span>
+            <span className="nav-link-full">Flight Briefing</span>
+            <span className="nav-link-short">Briefing</span>
           </a>
           <div className="nav-social-actions">
             <a
@@ -519,7 +520,7 @@ function App() {
                 Architecture Specs
               </a>
             </div>
-            <div className="footer-col">
+            <div className="footer-col footer-col-status">
               <span className="footer-col-title">Status</span>
               <span className="footer-link footer-status-live">● API Operational</span>
             </div>

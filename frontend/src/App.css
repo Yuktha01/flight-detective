@@ -1675,7 +1675,9 @@ h1.hero-heading-editorial {
 
 /* Desktop default: Hide mobile pass, always show canvas */
 @media (min-width: 641px) {
-  
+  .mobile-boarding-pass {
+    display: none !important;
+  }
   .boarding-pass-box {
     display: flex !important;
   }

@@ -1125,6 +1125,71 @@ function FlightRoute({ flight }: FlightDetailsProps) {
     <section className="route-section geodesic-route-card" aria-labelledby="route-heading">
       <div className="section-heading route-section-heading">
         <h3 id="route-heading" className="route-card-title">The Route</h3>
+        <span className="route-mobile-corridor" aria-hidden="true">
+          {departure.iata || originCity.slice(0, 3).toUpperCase()} → {arrival.iata || destCity.slice(0, 3).toUpperCase()}
+        </span>
+      </div>
+
+      {/* Dedicated Native Mobile Boarding Pass (Apple Wallet / Noir Ticket style) */}
+      <div className="mobile-boarding-pass">
+        <div className="mobile-pass-header">
+          <div className="mobile-pass-airline">
+            <span className="mobile-pass-logo-badge">
+              {(departure.iata || originCity.slice(0, 2)).slice(0, 2).toUpperCase()}
+            </span>
+            <div className="mobile-pass-airline-text">
+              <span className="mobile-pass-operator">{operatorName}</span>
+              <span className="mobile-pass-flight-code">{flightCode}</span>
+            </div>
+          </div>
+          <div className="mobile-pass-status-pill">
+            {flight.flight.status?.replace('_', ' ').toUpperCase() || 'SCHEDULED'}
+          </div>
+        </div>
+
+        <div className="mobile-pass-body">
+          <div className="mobile-pass-route">
+            <div className="mobile-pass-endpoint">
+              <span className="mobile-pass-iata">{departure.iata || originCity.slice(0, 3).toUpperCase()}</span>
+              <span className="mobile-pass-city">{originCity}</span>
+              <span className="mobile-pass-time">{boardingTime}</span>
+              <span className="mobile-pass-date">{ticketDate}</span>
+            </div>
+
+            <div className="mobile-pass-corridor-flow" aria-hidden="true">
+              <span className="mobile-pass-plane-icon">✈</span>
+              <div className="mobile-pass-line" />
+              <span className="mobile-pass-nonstop-pill">DIRECT</span>
+            </div>
+
+            <div className="mobile-pass-endpoint end-right">
+              <span className="mobile-pass-iata">{arrival.iata || destCity.slice(0, 3).toUpperCase()}</span>
+              <span className="mobile-pass-city">{destCity}</span>
+              <span className="mobile-pass-time">{arrivalTime}</span>
+              <span className="mobile-pass-date">{arrivalDate}</span>
+            </div>
+          </div>
+
+          <div className="mobile-pass-grid">
+            <div className="mobile-pass-cell">
+              <span className="mobile-pass-label">GATE</span>
+              <span className="mobile-pass-val accent">{gate}</span>
+            </div>
+            <div className="mobile-pass-cell">
+              <span className="mobile-pass-label">TERMINAL</span>
+              <span className="mobile-pass-val">{terminal}</span>
+            </div>
+            <div className="mobile-pass-cell">
+              <span className="mobile-pass-label">BOARDING</span>
+              <span className="mobile-pass-val">{boardingTime}</span>
+            </div>
+            <div className="mobile-pass-cell">
+              <span className="mobile-pass-label">AIRCRAFT</span>
+              <span className="mobile-pass-val">{aircraftInfo}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div id="box" ref={boxRef} className="boarding-pass-box">
