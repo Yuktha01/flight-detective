@@ -11,7 +11,8 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    pool: "forks",
+    pool: "threads",
+    fileParallelism: false,
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     setupFiles: "./src/test/setup.ts",
     clearMocks: true,

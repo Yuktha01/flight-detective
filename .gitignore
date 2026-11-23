@@ -24,7 +24,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Test coverage
+# Test coverage and artifacts
 coverage/
+test-results/
+playwright-report/
 *.zip
 .lambda-package-staging/

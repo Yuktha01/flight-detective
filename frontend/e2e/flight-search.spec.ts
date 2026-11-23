@@ -64,7 +64,7 @@ const flightResponse = {
 };
 
 test("searches for a flight and displays its briefing", async ({ page }) => {
-  await page.route("**/api/flights/SU1531", async (route) => {
+  await page.route("**/api/flights/SU1531*", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 500));
     await route.fulfill({ status: 200, json: flightResponse });
   });
@@ -82,9 +82,9 @@ test("searches for a flight and displays its briefing", async ({ page }) => {
 
   await expect(page.getByRole("status")).toContainText("CHECKING SU1531");
   await expect(page.getByRole("heading", { name: "SU1531" })).toBeVisible();
-  await expect(page.getByText("Aeroflot")).toBeVisible();
-  await expect(page.getByText("SVO")).toBeVisible();
-  await expect(page.getByText("LED", { exact: true })).toBeVisible();
+  await expect(page.getByText("Aeroflot").first()).toBeVisible();
+  await expect(page.getByText("SVO", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("LED", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("in flight", { exact: true })).toBeVisible();
   await expect(
     page.getByText("This flight is delayed by 15 minutes."),
@@ -94,7 +94,7 @@ test("searches for a flight and displays its briefing", async ({ page }) => {
 test("shows a not-found message for a 404 flight response", async ({
   page,
 }) => {
-  await page.route("**/api/flights/SU1531", async (route) => {
+  await page.route("**/api/flights/SU1531*", async (route) => {
     await route.fulfill({
       status: 404,
       json: {
