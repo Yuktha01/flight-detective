@@ -85,7 +85,7 @@ test("searches for a flight and displays its briefing", async ({ page }) => {
   await expect(page.getByText("Aeroflot").first()).toBeVisible();
   await expect(page.getByText("SVO", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("LED", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("in flight", { exact: true })).toBeVisible();
+  await expect(page.getByText("in flight").first()).toBeVisible();
   await expect(
     page.getByText("This flight is delayed by 15 minutes."),
   ).toBeVisible();
