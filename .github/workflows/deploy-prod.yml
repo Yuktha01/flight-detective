@@ -11,27 +11,33 @@ permissions:
 
 env:
   AWS_REGION: ap-south-1
-  ECR_REPOSITORY: flight-detective-backend
-  ECS_CLUSTER: default
-  ECS_SERVICE: flight-detective-backend
-  ECS_TASK_DEFINITION: default-flight-detective-backend
-  ECS_CONTAINER_NAME: Main
+  LAMBDA_FUNCTION_NAME: flight-detective-backend
   S3_BUCKET: flight-detective-frontend-v1
   CLOUDFRONT_DISTRIBUTION_ID: E3RAMX2R1O3ZXX
 
 jobs:
   deploy-backend:
-    name: Deploy Backend
+    name: Deploy Backend (AWS Lambda)
     runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure Docker daemon for ECR compatibility
-        run: |
-          echo '{"features":{"containerd-snapshotter":false}}' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Build Lambda package
+        working-directory: backend
+        run: npm run build:lambda
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -39,50 +45,16 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build and push Docker image
-        id: build-image
+      - name: Deploy package to AWS Lambda
         working-directory: backend
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
-
-          docker build --provenance=false -t "$IMAGE_URI" .
-          docker push "$IMAGE_URI"
-
-          echo "image=$IMAGE_URI" >> "$GITHUB_OUTPUT"
-
-      - name: Get current ECS task definition
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition "$ECS_TASK_DEFINITION" \
-            --query taskDefinition \
-            --output json > task-definition.json
-
-      - name: Render new image into task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: ${{ env.ECS_CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.image }}
-
-      - name: Deploy task definition to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          aws lambda update-function-code \
+            --function-name "${{ vars.LAMBDA_FUNCTION_NAME || env.LAMBDA_FUNCTION_NAME }}" \
+            --zip-file "fileb://flight-detective-lambda.zip"
 
   deploy-frontend:
-    name: Deploy Frontend
+    name: Deploy Frontend (S3 + CloudFront)
     runs-on: ubuntu-24.04
-    needs: deploy-backend
 
     steps:
       - name: Checkout repository
@@ -117,5 +89,5 @@ jobs:
       - name: Create CloudFront invalidation
         run: |
           aws cloudfront create-invalidation \
-          --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-          --paths "/*"
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/*"

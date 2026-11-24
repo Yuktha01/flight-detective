@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type SubmitEvent } from 'react'
 
-export interface RouteSuggestion {
+interface RouteSuggestion {
   code: string
   corridor: string
   details: string
   network: string
 }
 
-export const POPULAR_CORRIDORS: RouteSuggestion[] = [
+const POPULAR_CORRIDORS: RouteSuggestion[] = [
   {
     code: 'BA249',
     corridor: 'LHR → GIG',
@@ -88,8 +88,10 @@ export function SearchForm({
         setCharCount((prev) => prev - 1)
       }, deletingSpeed)
     } else if (isDeleting && charCount === 0) {
-      setIsDeleting(false)
-      setRouteIndex((prev) => (prev + 1) % POPULAR_CORRIDORS.length)
+      timer = setTimeout(() => {
+        setIsDeleting(false)
+        setRouteIndex((prev) => (prev + 1) % POPULAR_CORRIDORS.length)
+      }, deletingSpeed)
     }
 
     return () => clearTimeout(timer)

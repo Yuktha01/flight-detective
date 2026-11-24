@@ -423,7 +423,9 @@ function FlightRoute({ flight }: FlightDetailsProps) {
         0.015
       )
       bp.frequency.setTargetAtTime(1800 + Math.random() * 1500, t, 0.02)
-    } catch {}
+    } catch {
+      /* ignore audio error */
+    }
   }
 
   const thump = (v: number) => {
@@ -441,7 +443,9 @@ function FlightRoute({ flight }: FlightDetailsProps) {
       k.connect(ctx.destination)
       o.start(t)
       o.stop(t + 0.2)
-    } catch {}
+    } catch {
+      /* ignore audio error */
+    }
   }
 
   const gen = () => {
@@ -776,7 +780,9 @@ function FlightRoute({ flight }: FlightDetailsProps) {
     if (noiseGainRef.current) {
       try {
         noiseGainRef.current.gain.value = 0
-      } catch {}
+      } catch {
+        /* ignore audio error */
+      }
     }
     if (msgRef.current) msgRef.current.textContent = 'Tear 0%'
 
@@ -983,7 +989,9 @@ function FlightRoute({ flight }: FlightDetailsProps) {
     if (typeof e.currentTarget.setPointerCapture === 'function') {
       try {
         e.currentTarget.setPointerCapture(e.pointerId)
-      } catch {}
+      } catch {
+        /* ignore pointer capture error */
+      }
     }
     st0Ref.current = { x: e.clientX, y: e.clientY, f: frontRef.current }
     stateRef.current = 'drag'
@@ -1015,7 +1023,9 @@ function FlightRoute({ flight }: FlightDetailsProps) {
     if (typeof e.currentTarget.releasePointerCapture === 'function') {
       try {
         e.currentTarget.releasePointerCapture(e.pointerId)
-      } catch {}
+      } catch {
+        /* ignore pointer release error */
+      }
     }
     if (stateRef.current === 'drag') {
       stateRef.current = frontRef.current >= H * 0.7 ? 'auto' : 'idle'
@@ -1035,7 +1045,9 @@ function FlightRoute({ flight }: FlightDetailsProps) {
     if (typeof e.currentTarget.setPointerCapture === 'function') {
       try {
         e.currentTarget.setPointerCapture(e.pointerId)
-      } catch {}
+      } catch {
+        /* ignore pointer capture error */
+      }
     }
     const stage = stageRef.current
     if (!stage) return
@@ -1059,7 +1071,9 @@ function FlightRoute({ flight }: FlightDetailsProps) {
     if (typeof e.currentTarget.releasePointerCapture === 'function') {
       try {
         e.currentTarget.releasePointerCapture(e.pointerId)
-      } catch {}
+      } catch {
+        /* ignore pointer release error */
+      }
     }
     releaseThrowRef.current()
   }
