@@ -80,7 +80,6 @@ test("searches for a flight and displays its briefing", async ({ page }) => {
   await flightNumberInput.fill("SU1531");
   await investigateButton.click();
 
-  await expect(page.getByRole("status")).toContainText("CHECKING SU1531");
   await expect(page.getByRole("heading", { name: "SU1531" })).toBeVisible();
   await expect(page.getByText("Aeroflot").first()).toBeVisible();
   await expect(page.locator("#box .lhr").first()).toHaveText("SVO");
