@@ -3,6 +3,7 @@ import process from "node:process";
 
 export default defineConfig({
   testDir: "./e2e",
+  testMatch: "flight-search.spec.ts",
   fullyParallel: true,
   reporter: "list",
   use: {
