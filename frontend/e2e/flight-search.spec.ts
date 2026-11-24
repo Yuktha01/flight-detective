@@ -82,8 +82,8 @@ test("searches for a flight and displays its briefing", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "SU1531" })).toBeVisible();
   await expect(page.getByText("Aeroflot").first()).toBeVisible();
-  await expect(page.locator("#box .lhr").first()).toHaveText("SVO");
-  await expect(page.locator("#box .lhr").nth(1)).toHaveText("LED");
+  await expect(page.locator("#box .lhr")).toHaveText("SVO");
+  await expect(page.locator("#box .gig")).toHaveText("LED");
   await expect(page.locator(".status-badge")).toContainText("in flight");
   await expect(
     page.getByText("This flight is delayed by 15 minutes."),
