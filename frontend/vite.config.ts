@@ -13,6 +13,7 @@ export default defineConfig({
     environment: "jsdom",
     pool: "threads",
     fileParallelism: false,
+    isolate: false,
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     setupFiles: "./src/test/setup.ts",
     clearMocks: true,
