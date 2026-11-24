@@ -107,7 +107,7 @@ test("shows a not-found message for a 404 flight response", async ({
   });
 
   await page.goto("/");
-  await page.getByRole("textbox", { name: "Flight number" }).fill("SU1531");
+  await page.getByRole("textbox", { name: /flight number/i }).fill("SU1531");
   await page.getByRole("button", { name: /investigate/i }).click();
 
   await expect(
