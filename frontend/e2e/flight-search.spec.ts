@@ -71,7 +71,7 @@ test("searches for a flight and displays its briefing", async ({ page }) => {
 
   await page.goto("/");
   const flightNumberInput = page.getByRole("textbox", {
-    name: "Flight number",
+    name: /flight number/i,
   });
   const investigateButton = page.getByRole("button", { name: /investigate/i });
 

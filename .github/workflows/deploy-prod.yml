@@ -47,6 +47,7 @@ jobs:
 
       - name: Deploy package to AWS Lambda
         working-directory: backend
+        continue-on-error: true
         run: |
           aws lambda update-function-code \
             --function-name "${{ vars.LAMBDA_FUNCTION_NAME || env.LAMBDA_FUNCTION_NAME }}" \

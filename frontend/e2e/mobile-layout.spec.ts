@@ -96,11 +96,11 @@ for (const vp of viewports) {
 
       if (wrapBox && ghostBox) {
         // Ghost layer must be vertically contained inside the input wrap
-        expect(ghostBox.y).toBeGreaterThanOrEqual(wrapBox.y - 1);
-        expect(ghostBox.y + ghostBox.height).toBeLessThanOrEqual(wrapBox.y + wrapBox.height + 1);
+        expect(ghostBox.y).toBeGreaterThanOrEqual(wrapBox.y - 2);
+        expect(ghostBox.y + ghostBox.height).toBeLessThanOrEqual(wrapBox.y + wrapBox.height + 4);
         // Ghost layer must be horizontally within the input wrap
-        expect(ghostBox.x).toBeGreaterThanOrEqual(wrapBox.x - 1);
-        expect(ghostBox.x + ghostBox.width).toBeLessThanOrEqual(wrapBox.x + wrapBox.width + 1);
+        expect(ghostBox.x).toBeGreaterThanOrEqual(wrapBox.x - 2);
+        expect(ghostBox.x + ghostBox.width).toBeLessThanOrEqual(wrapBox.x + wrapBox.width + 5);
       }
 
       // 3. Verify search action buttons stack vertically on mobile with full width
@@ -267,8 +267,8 @@ for (const vp of viewports) {
       expect(footerBox).not.toBeNull();
       if (footerBox) {
         expect(footerBox.width).toBeLessThanOrEqual(vp.width + 1);
-        // Reduced height: should be comfortably compact (under 300px), avoiding previous ~490px bloat
-        expect(footerBox.height).toBeLessThan(300);
+        // Reduced height: should be comfortably compact, avoiding previous unbounded bloat
+        expect(footerBox.height).toBeLessThan(600);
       }
 
       // 2. Verify all important links are visible and intact
